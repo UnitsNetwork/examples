@@ -60,32 +60,6 @@ const elBridgeAbi = JSON.parse(fs.readFileSync(`${__dirname}/bridge-abi.json`, {
 
 const elBridgeContract = new Contract(elBridgeAbi, elBridgeAddress, ecApi);
 
-/**
- * Estimates the gas price based on recent blocks and current gas price.
- * @param web3 The Web3 instance with registered subscription types.
- * @param minBlocks The minimum number of blocks to consider for calculating the average gas price.
- */
-export async function estimateGasPrice(web3: Web3<any>, minBlocks: number = 5): Promise<bigint> {
-  const height = Number(await web3.eth.getBlockNumber());
-  const blockCount = Math.max(minBlocks, Math.min(20, height));
-
-  const gasPriceByPpi = BigInt(await web3.eth.getGasPrice());
-
-  // Bad schema in web3:
-  // @ts-ignore: Type 'bigint' is not assignable to type 'bigint[]'
-  const gasPricesHistory: bigint[] = (await web3.eth.getFeeHistory(blockCount, 'latest', [])).baseFeePerGas;
-
-  let gasPrice: bigint;
-  if (gasPricesHistory.length > 0) {
-    const averagePrice = gasPricesHistory.reduce((acc, fee) => acc + fee, 0n) / BigInt(gasPricesHistory.length);
-    gasPrice = averagePrice > gasPriceByPpi ? averagePrice : gasPriceByPpi;
-  } else {
-    gasPrice = gasPriceByPpi;
-  }
-
-  return gasPrice * 110n / 100n; // + 10% tip
-}
-
 // Call "sendNative" on Bridge in EL
 
 const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
@@ -96,7 +70,7 @@ let sendNativeTx = {
     from: elAccount.address,
     value: transfer.amount,
   }),
-  gasPrice: await estimateGasPrice(ecApi),
+  gasPrice: await common.estimateGasPrice(ecApi),
   value: transfer.amount,
   data: sendNativeCall.encodeABI(),
 };
@@ -122,23 +96,17 @@ console.log('Index of withdrawal:', withdrawIndex);
 
 // Getting proofs
 
-function blake2b(buffer: Buffer): Buffer {
-  const arr = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  const hashedArr = wavesCrypto.blake2b(arr);
-  return Buffer.from(hashedArr.buffer, hashedArr.byteOffset, hashedArr.byteLength);
-}
-
 const emptyLeafArr = new Uint8Array([0]);
 const emptyLeaf = Buffer.from(emptyLeafArr.buffer, emptyLeafArr.byteOffset, emptyLeafArr.byteLength);
-const emptyHashedLeaf = blake2b(emptyLeaf);
+const emptyHashedLeaf = common.blake2b(emptyLeaf);
 
-let leaves = logsInElBlock.map(log => blake2b(Buffer.from(log.data.slice(2), 'hex')));
+let leaves = logsInElBlock.map(log => common.blake2b(Buffer.from(log.data.slice(2), 'hex')));
 
 for (let i = 1024 - leaves.length; i > 0; i--) { // Merkle tree must have 1024 leaves
   leaves.push(emptyHashedLeaf);
 }
 
-const merkleTree = new MerkleTree(leaves, blake2b);
+const merkleTree = new MerkleTree(leaves, common.blake2b);
 let proofs = merkleTree.getProof(leaves[withdrawIndex])
 
 // Waiting for EL block with our withdrawal
