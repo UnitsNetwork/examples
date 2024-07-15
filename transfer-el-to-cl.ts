@@ -11,12 +11,6 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const chainIdStr = 'S'; // StageNet
-const chainId = chainIdStr.charCodeAt(0);
-
-const clNodeApiUrl = "https://nodes-stagenet.wavesnodes.com";
-const elNodeApiUrl = "https://rpc-stagenet.unit0.dev";
-
 function getArgumentValue(argName: string): string | undefined {
   const index = process.argv.indexOf(argName);
   if (index !== -1 && index + 1 < process.argv.length) {
@@ -25,13 +19,27 @@ function getArgumentValue(argName: string): string | undefined {
   return undefined;
 }
 
-const clAccountPrivateKey = getArgumentValue('--cl-private-key');
+const chainIdStr = getArgumentValue('--chain-id') || 'S'; // StageNet by default
+const chainId = chainIdStr.charCodeAt(0);
+
+const amount = getArgumentValue('--amount') || '0.01';
+
+const clAccountPrivateKey = getArgumentValue('--waves-private-key');
 const elAccountPrivateKey = getArgumentValue('--el-private-key');
 if (!(clAccountPrivateKey && elAccountPrivateKey)) {
-  console.error('Two arguments required, e.g.:\nnpx tsx transfer-el-to-cl.ts --cl-private-key <Waves private key in base58> --el-private-key <Ethereum private key in HEX with 0x>');
+  console.error(
+    'Transfer native tokens from Execution Layer to Consensus Layer (Waves).\n\
+At least two arguments required:\n\
+  npx tsx transfer-el-to-cl.ts --cl-private-key <Waves private key in base58> --el-private-key <Ethereum private key in HEX with 0x>\n\
+Additional optional arguments:\n\
+  --chain-id <S|T|W>, S by default: S - StageNet, not suported for now: T - TestNet, W - MainNet\n\
+  --amount N, 0.01 by default: amount of transferred Unit0 tokens'
+  );
   process.exit(1);
 }
 
+const clNodeApiUrl = "https://nodes-stagenet.wavesnodes.com";
+const elNodeApiUrl = "https://rpc-stagenet.unit0.dev";
 const chainContractAddress = "3Mew9817x6rePmCUKNAiRxuzNEP8F2XK1Kd";
 const elBridgeAddress = "0xadc0526e55b2234e62e3cc2ac13191552bed542f";
 
@@ -40,7 +48,7 @@ const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAc
 const clAccountPkHashBytes = wavesCrypto.base58Decode(clAccountAddress).slice(2, 22);
 
 const transfers = [
-  { recipient: clAccountAddress, amount: Web3.utils.toWei('0.01', 'ether') }
+  { recipient: clAccountAddress, amount: Web3.utils.toWei(amount, 'ether') }
 ];
 const transferIndex = 0;
 const transfer = transfers[transferIndex]
@@ -60,7 +68,10 @@ const elBridgeAbi = JSON.parse(fs.readFileSync(`${__dirname}/bridge-abi.json`, {
 
 const elBridgeContract = new Contract(elBridgeAbi, elBridgeAddress, ecApi);
 
+console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Layer to ${clAccountAddress} in Consensus (Waves) Layer`);
+
 // Call "sendNative" on Bridge in EL
+console.log('Call "sendNative" on Bridge in EL');
 
 const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
 let sendNativeTx = {
