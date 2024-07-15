@@ -25,12 +25,12 @@ const chainId = chainIdStr.charCodeAt(0);
 const amount = getArgumentValue('--amount') || '0.01';
 
 const clAccountPrivateKey = getArgumentValue('--waves-private-key');
-const elAccountPrivateKey = getArgumentValue('--el-private-key');
+const elAccountPrivateKey = getArgumentValue('--eth-private-key');
 if (!(clAccountPrivateKey && elAccountPrivateKey)) {
   console.error(
     'Transfer native tokens from Execution Layer to Consensus Layer (Waves).\n\
 At least two arguments required:\n\
-  npx tsx transfer-el-to-cl.ts --cl-private-key <Waves private key in base58> --el-private-key <Ethereum private key in HEX with 0x>\n\
+  npx tsx transfer-el-to-cl.ts --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>\n\
 Additional optional arguments:\n\
   --chain-id <S|T|W>, S by default: S - StageNet, not suported for now: T - TestNet, W - MainNet\n\
   --amount N, 0.01 by default: amount of transferred Unit0 tokens'
