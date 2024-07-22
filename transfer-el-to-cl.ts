@@ -38,10 +38,17 @@ Additional optional arguments:\n\
   process.exit(1);
 }
 
-const clNodeApiUrl = "https://nodes-stagenet.wavesnodes.com";
-const elNodeApiUrl = "https://rpc-stagenet.unit0.dev";
-const chainContractAddress = "3Mew9817x6rePmCUKNAiRxuzNEP8F2XK1Kd";
-const elBridgeAddress = "0xadc0526e55b2234e62e3cc2ac13191552bed542f";
+let clNodeApiUrl = "https://nodes-stagenet.wavesnodes.com";
+let elNodeApiUrl = "https://rpc-stagenet.unit0.dev";
+let chainContractAddress = "3Mew9817x6rePmCUKNAiRxuzNEP8F2XK1Kd";
+let elBridgeAddress = "0xadc0526e55b2234e62e3cc2ac13191552bed542f";
+
+if (chainIdStr == 'T') {
+  clNodeApiUrl = "https://nodes-testnet.wavesnodes.com";
+  elNodeApiUrl = "https://rpc-testnet.unit0.dev";
+  chainContractAddress = "3MsqKJ6o1ABE37676cHHBxJRs6huYTt72ch";
+  elBridgeAddress = "0x33ce7f46EbC22D01B50e2eEb8DcD26C31a0e027C";
+}
 
 const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey: clAccountPrivateKey });
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
