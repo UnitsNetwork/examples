@@ -2,7 +2,8 @@ import * as waves from '@waves/node-api-js';
 import * as wavesCrypto from '@waves/ts-lib-crypto';
 import * as wavesTransactions from '@waves/waves-transactions';
 import fs from 'fs';
-import { Contract, Web3 } from 'web3';
+import { Contract, Transaction, Web3 } from 'web3';
+import { Web3Account } from 'web3-eth-accounts';
 import * as common from './common.ts';
 
 // Hack to get a current dir: https://stackoverflow.com/a/50053801
@@ -51,13 +52,15 @@ if (chainIdStr == 'T') {
 
 const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey: clAccountPrivateKey });
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
-const clAccountPkHashBytes = wavesCrypto.base58Decode(clAccountAddress).slice(2, 22);
 
-const transfers = [
-  { recipient: clAccountAddress, amount: Web3.utils.toWei(amount, 'ether') }
-];
-const transferIndex = 0;
-const transfer = transfers[transferIndex]
+interface ElToClTransfer {
+  recipient: string,
+  amount: string
+}
+const transfer: ElToClTransfer = {
+  recipient: clAccountAddress,
+  amount: Web3.utils.toWei(amount, 'ether')
+};
 
 let wavesApi = waves.create(clNodeApiUrl);
 
@@ -77,47 +80,64 @@ const elBridgeContract = new Contract(elBridgeAbi, elBridgeAddress, ecApi);
 console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Layer to ${clAccountAddress} in Consensus (Waves) Layer`);
 
 // Call "sendNative" on Bridge in EL
-console.log('Call "sendNative" on Bridge in EL');
-
-const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
-let sendNativeTx = {
-  to: elBridgeContract.options.address,
-  from: elAccount.address,
-  gas: await sendNativeCall.estimateGas({
-    from: elAccount.address,
+async function sendElRequest(transfer: ElToClTransfer, fromAccount: Web3Account, nonce: number, gasPrice: bigint) {
+  const clAccountPkHashBytes = wavesCrypto.base58Decode(transfer.recipient).slice(2, 22);
+  const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
+  const nonceHex = Web3.utils.toHex(nonce);
+  const gasPriceHex = Web3.utils.toWei(gasPrice, "wei");
+  const dataAbi = sendNativeCall.encodeABI();
+  const gas = await sendNativeCall.estimateGas({
+    from: fromAccount.address,
+    nonce: nonceHex,
+    gasPrice: gasPrice,
     value: transfer.amount,
-  }),
-  gasPrice: await common.estimateGasPrice(ecApi),
-  value: transfer.amount,
-  data: sendNativeCall.encodeABI(),
-};
+    data: dataAbi
+  });
+  let sendNativeTx: Transaction = {
+    from: fromAccount.address,
+    nonce: nonceHex,
+    to: elBridgeContract.options.address,
+    gas: gas,
+    gasPrice: gasPriceHex,
+    value: transfer.amount,
+    data: dataAbi,
+  };
 
-const sendNativeSignedTx = await ecApi.eth.accounts.signTransaction(sendNativeTx, elAccount.privateKey);
-const sendNativeResult = await ecApi.eth.sendSignedTransaction(sendNativeSignedTx.rawTransaction);
+  const sendNativeSignedTx = await ecApi.eth.accounts.signTransaction(sendNativeTx, elAccount.privateKey);
+  return await ecApi.eth.sendSignedTransaction(sendNativeSignedTx.rawTransaction);
+}
 
+const gasPrice = await common.estimateGasPrice(ecApi);
+const initNonce = Number(await ecApi.eth.getTransactionCount(elAccount.address));
+
+console.log('Call "sendNative" on Bridge in EL');
+const sendNativeResult = await sendElRequest(transfer, elAccount, initNonce, gasPrice);
 console.log('EL sendNative result:', sendNativeResult);
+
+const blockHash: string = sendNativeResult.blockHash;
+console.log(`Block hash: ${blockHash}`);
 
 // Get an index of withdrawal in the block with this withdrawal
 
 const logsInElBlock = await ecApi.eth.getPastLogs({
-  blockHash: sendNativeResult.blockHash,
+  blockHash: blockHash,
   address: elBridgeAddress,
   topics: elBridgeContract.events.SentNative().args.topics
 });
 
 const withdrawIndex = logsInElBlock.findIndex((log: any) => log.transactionHash == sendNativeResult.transactionHash);
-console.log('Index of withdrawal:', withdrawIndex);
+console.log(`Index of withdrawal: ${withdrawIndex}`);
 
 // Getting proofs
 
 const merkleTreeLeaves = common.createMerkleTreeLeaves(logsInElBlock.map((l: any) => l.data));
 const merkleTree = common.createMerkleTree(merkleTreeLeaves);
-let proofs = merkleTree.getProof(merkleTreeLeaves[withdrawIndex])
+let proofs = merkleTree.getProof(merkleTreeLeaves[withdrawIndex], withdrawIndex)
 
 // Waiting for EL block with our withdrawal
 
-console.log(`Waiting EL block ${sendNativeResult.blockHash} confirmation on CL`);
-const withdrawBlockMeta = await common.waitForEcBlock(wavesApi, chainContractAddress, sendNativeResult.blockHash);
+console.log(`Waiting EL block ${blockHash} confirmation on CL`);
+const withdrawBlockMeta = await common.waitForEcBlock(wavesApi, chainContractAddress, blockHash);
 
 console.log(`Withdraw block meta: %O`, withdrawBlockMeta);
 
@@ -132,44 +152,47 @@ await common.repeat(async () => {
 }, 2000);
 
 // Preparing a CL transaction
-
-const withdrawSignedTx = wavesTransactions.invokeScript(
-  {
-    dApp: chainContractAddress,
-    call: {
-      function: "withdraw",
-      args: [
-        {
-          type: "string",
-          value: sendNativeResult.blockHash.slice(2)
-        },
-        {
-          type: "list",
-          value: proofs.map(x => {
-            return {
-              type: "binary",
-              value: x.data.toString('base64')
-            };
-          })
-        },
-        {
-          type: "integer",
-          value: withdrawIndex
-        },
-        {
-          type: "integer",
-          value: Number(BigInt(transfer.amount) / (10n ** 10n)) // 10^10 - see EL_TO_CL_RATIO in bridge.sol
-        },
-      ]
+function signWithdraw(blockHash: string, proofs: any[], withdrawIndex: number, amountInWei: string) {
+  return wavesTransactions.invokeScript(
+    {
+      dApp: chainContractAddress,
+      call: {
+        function: "withdraw",
+        args: [
+          {
+            type: "string",
+            value: blockHash.slice(2)
+          },
+          {
+            type: "list",
+            value: proofs.map(x => {
+              return {
+                type: "binary",
+                value: x.data.toString('base64')
+              };
+            })
+          },
+          {
+            type: "integer",
+            value: withdrawIndex
+          },
+          {
+            type: "integer",
+            value: Number(BigInt(amountInWei) / (10n ** 10n)) // 10^10 - see EL_TO_CL_RATIO in bridge.sol
+          },
+        ]
+      },
+      payment: [],
+      fee: 500000,
+      chainId: chainIdStr
     },
-    payment: [],
-    fee: 500000,
-    chainId: chainIdStr
-  },
-  {
-    privateKey: clAccountPrivateKey
-  }
-)
+    {
+      privateKey: clAccountPrivateKey
+    }
+  )
+}
+
+const withdrawSignedTx = signWithdraw(blockHash, proofs, withdrawIndex, transfer.amount);
 
 // Sending the withdraw transaction to CL
 
