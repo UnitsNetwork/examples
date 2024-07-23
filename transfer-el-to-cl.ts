@@ -2,7 +2,6 @@ import * as waves from '@waves/node-api-js';
 import * as wavesCrypto from '@waves/ts-lib-crypto';
 import * as wavesTransactions from '@waves/waves-transactions';
 import fs from 'fs';
-import { MerkleTree } from 'merkletreejs';
 import { Contract, Web3 } from 'web3';
 import * as common from './common.ts';
 
@@ -106,26 +105,14 @@ const logsInElBlock = await ecApi.eth.getPastLogs({
   topics: elBridgeContract.events.SentNative().args.topics
 });
 
-const lookingForData = sendNativeResult.logs[0].data;
-console.log(logsInElBlock);
-
-const withdrawIndex = logsInElBlock.findIndex((log) => log.data == lookingForData);
+const withdrawIndex = logsInElBlock.findIndex((log: any) => log.transactionHash == sendNativeResult.transactionHash);
 console.log('Index of withdrawal:', withdrawIndex);
 
 // Getting proofs
 
-const emptyLeafArr = new Uint8Array([0]);
-const emptyLeaf = Buffer.from(emptyLeafArr.buffer, emptyLeafArr.byteOffset, emptyLeafArr.byteLength);
-const emptyHashedLeaf = common.blake2b(emptyLeaf);
-
-let leaves = logsInElBlock.map(log => common.blake2b(Buffer.from(log.data.slice(2), 'hex')));
-
-for (let i = 1024 - leaves.length; i > 0; i--) { // Merkle tree must have 1024 leaves
-  leaves.push(emptyHashedLeaf);
-}
-
-const merkleTree = new MerkleTree(leaves, common.blake2b);
-let proofs = merkleTree.getProof(leaves[withdrawIndex])
+const merkleTreeLeaves = common.createMerkleTreeLeaves(logsInElBlock.map((l: any) => l.data));
+const merkleTree = common.createMerkleTree(merkleTreeLeaves);
+let proofs = merkleTree.getProof(merkleTreeLeaves[withdrawIndex])
 
 // Waiting for EL block with our withdrawal
 
@@ -188,4 +175,3 @@ const withdrawSignedTx = wavesTransactions.invokeScript(
 
 const withdrawSendSignedTxResult = await wavesApi.transactions.broadcast(withdrawSignedTx);
 console.log('CL withdrawal result:', withdrawSendSignedTxResult);
-

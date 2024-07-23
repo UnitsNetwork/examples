@@ -1,6 +1,7 @@
 import * as waves from '@waves/node-api-js';
 import { Web3 } from 'web3';
 import * as wavesCrypto from '@waves/ts-lib-crypto';
+import { MerkleTree } from 'merkletreejs';
 
 export function sleep(ms: number): Promise<void> {
   return new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -85,4 +86,19 @@ export async function estimateGasPrice(web3: Web3<any>, minBlocks: number = 5): 
   }
 
   return gasPrice * 110n / 100n; // + 10% tip
+}
+
+export function createMerkleTreeLeaves(logsDataFromElBlock: string[]) {
+  return logsDataFromElBlock.map(data => blake2b(Buffer.from(data.slice(2), 'hex')));
+}
+
+export function createMerkleTree(leaves: Buffer[]) {
+  const emptyLeafArr = new Uint8Array([0]);
+  const emptyLeaf = Buffer.from(emptyLeafArr.buffer, emptyLeafArr.byteOffset, emptyLeafArr.byteLength);
+  const emptyHashedLeaf = blake2b(emptyLeaf);
+  for (let i = 1024 - leaves.length; i > 0; i--) { // Merkle tree must have 1024 leaves
+    leaves.push(emptyHashedLeaf);
+  }
+
+  return new MerkleTree(leaves, blake2b);
 }
