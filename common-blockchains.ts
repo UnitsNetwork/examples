@@ -1,38 +1,13 @@
-import * as waves from '@waves/node-api-js';
-import { Web3 } from 'web3';
 import * as wavesCrypto from '@waves/ts-lib-crypto';
 import { MerkleTree } from 'merkletreejs';
-
-export function sleep(ms: number): Promise<void> {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Repeats function call every specified interval until it returns a non-null result.
- * @param f The function to execute repeatedly.
- * @param interval Interval in milliseconds between function calls.
- */
-export async function repeat<T>(f: () => Promise<T | undefined>, interval: number): Promise<T> {
-  let result: T | undefined;
-  while (true) {
-    result = await f();
-    if (result === null || result === undefined) {
-      await sleep(interval);
-    } else {
-      return result;
-    }
-  }
-}
+import { Web3 } from 'web3';
+import { repeat } from './common-utils';
+import { EcBlockContractInfo, WavesApi } from './types';
 
 export function blake2b(buffer: Buffer): Buffer {
   const arr = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   const hashedArr = wavesCrypto.blake2b(arr);
   return Buffer.from(hashedArr.buffer, hashedArr.byteOffset, hashedArr.byteLength);
-}
-
-export interface EcBlockContractInfo {
-  chainHeight: number,
-  epochNumber: number
 }
 
 function parseBlockMeta(response: object): EcBlockContractInfo {
@@ -43,8 +18,6 @@ function parseBlockMeta(response: object): EcBlockContractInfo {
     epochNumber: rawMeta._2.value,
   };
 }
-
-export type WavesApi = ReturnType<typeof waves.create>;
 
 export async function waitForEcBlock(wavesApi: WavesApi, chainContractAddress: string, blockHash: string): Promise<EcBlockContractInfo> {
   const getBlockData = async () => {

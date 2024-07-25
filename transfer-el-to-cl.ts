@@ -4,28 +4,23 @@ import * as wavesTransactions from '@waves/waves-transactions';
 import fs from 'fs';
 import { Contract, Transaction, Web3 } from 'web3';
 import { Web3Account } from 'web3-eth-accounts';
-import * as common from './common.ts';
+import * as commonBlockchains from './common-blockchains';
+import * as commonUtils from './common-utils';
 
 // Hack to get a current dir: https://stackoverflow.com/a/50053801
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getNetwork } from './networks.ts';
+import { ElToClTransfer } from './types.ts';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getArgumentValue(argName: string): string | undefined {
-  const index = process.argv.indexOf(argName);
-  if (index !== -1 && index + 1 < process.argv.length) {
-    return process.argv[index + 1];
-  }
-  return undefined;
-}
-
-const chainIdStr = getArgumentValue('--chain-id') || 'S'; // StageNet by default
+const chainIdStr = commonUtils.getArgumentValue('--chain-id') || 'S'; // StageNet by default
 const chainId = chainIdStr.charCodeAt(0);
 
-const amount = getArgumentValue('--amount') || '0.01';
+const amount = commonUtils.getArgumentValue('--amount') || '0.01';
 
-const clAccountPrivateKey = getArgumentValue('--waves-private-key');
-const elAccountPrivateKey = getArgumentValue('--eth-private-key');
+const clAccountPrivateKey = commonUtils.getArgumentValue('--waves-private-key');
+const elAccountPrivateKey = commonUtils.getArgumentValue('--eth-private-key');
 if (!(clAccountPrivateKey && elAccountPrivateKey)) {
   console.error(
     'Transfer native tokens from Execution Layer to Consensus Layer (Waves).\n\
@@ -38,33 +33,18 @@ Additional optional arguments:\n\
   process.exit(1);
 }
 
-let clNodeApiUrl = "https://nodes-stagenet.wavesnodes.com";
-let elNodeApiUrl = "https://rpc-stagenet.unit0.dev";
-let chainContractAddress = "3Mew9817x6rePmCUKNAiRxuzNEP8F2XK1Kd";
-let elBridgeAddress = "0xadc0526e55b2234e62e3cc2ac13191552bed542f";
-
-if (chainIdStr == 'T') {
-  clNodeApiUrl = "https://nodes-testnet.wavesnodes.com";
-  elNodeApiUrl = "https://rpc-testnet.unit0.dev";
-  chainContractAddress = "3MsqKJ6o1ABE37676cHHBxJRs6huYTt72ch";
-  elBridgeAddress = "0x33ce7f46EbC22D01B50e2eEb8DcD26C31a0e027C";
-}
-
+const network = getNetwork(chainIdStr);
 const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey: clAccountPrivateKey });
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
 
-interface ElToClTransfer {
-  recipient: string,
-  amount: string
-}
 const transfer: ElToClTransfer = {
   recipient: clAccountAddress,
   amount: Web3.utils.toWei(amount, 'ether')
 };
 
-let wavesApi = waves.create(clNodeApiUrl);
+let wavesApi = waves.create(network.clNodeApiUrl);
 
-let ecApi = new Web3(elNodeApiUrl);
+let ecApi = new Web3(network.elNodeApiUrl);
 ecApi.eth.transactionConfirmationBlocks = 1;
 ecApi.eth.transactionBlockTimeout = 10;
 ecApi.eth.transactionPollingTimeout = 120000;
@@ -74,8 +54,7 @@ ecApi.eth.defaultAccount = elAccountPrivateKey;
 const elAccount = ecApi.eth.accounts.privateKeyToAccount(elAccountPrivateKey);
 
 const elBridgeAbi = JSON.parse(fs.readFileSync(`${__dirname}/bridge-abi.json`, { encoding: 'utf-8' }));
-
-const elBridgeContract = new Contract(elBridgeAbi, elBridgeAddress, ecApi);
+const elBridgeContract = new Contract(elBridgeAbi, network.elBridgeAddress, ecApi);
 
 console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Layer to ${clAccountAddress} in Consensus (Waves) Layer`);
 
@@ -107,12 +86,13 @@ async function sendElRequest(transfer: ElToClTransfer, fromAccount: Web3Account,
   return await ecApi.eth.sendSignedTransaction(sendNativeSignedTx.rawTransaction);
 }
 
-const gasPrice = await common.estimateGasPrice(ecApi);
+const gasPrice = await commonBlockchains.estimateGasPrice(ecApi);
 const initNonce = Number(await ecApi.eth.getTransactionCount(elAccount.address));
 
 console.log('Call "sendNative" on Bridge in EL');
 const sendNativeResult = await sendElRequest(transfer, elAccount, initNonce, gasPrice);
-console.log('EL sendNative result:', sendNativeResult);
+console.log('EL sendNative result:');
+console.dir(sendNativeResult, { depth: null });
 
 const blockHash: string = sendNativeResult.blockHash;
 console.log(`Block hash: ${blockHash}`);
@@ -121,7 +101,7 @@ console.log(`Block hash: ${blockHash}`);
 
 const logsInElBlock = await ecApi.eth.getPastLogs({
   blockHash: blockHash,
-  address: elBridgeAddress,
+  address: network.elBridgeAddress,
   topics: elBridgeContract.events.SentNative().args.topics
 });
 
@@ -130,23 +110,23 @@ console.log(`Index of withdrawal: ${withdrawIndex}`);
 
 // Getting proofs
 
-const merkleTreeLeaves = common.createMerkleTreeLeaves(logsInElBlock.map((l: any) => l.data));
-const merkleTree = common.createMerkleTree(merkleTreeLeaves);
+const merkleTreeLeaves = commonBlockchains.createMerkleTreeLeaves(logsInElBlock.map((l: any) => l.data));
+const merkleTree = commonBlockchains.createMerkleTree(merkleTreeLeaves);
 let proofs = merkleTree.getProof(merkleTreeLeaves[withdrawIndex], withdrawIndex)
 
 // Waiting for EL block with our withdrawal
 
 console.log(`Waiting EL block ${blockHash} confirmation on CL`);
-const withdrawBlockMeta = await common.waitForEcBlock(wavesApi, chainContractAddress, blockHash);
+const withdrawBlockMeta = await commonBlockchains.waitForEcBlock(wavesApi, network.chainContractAddress, blockHash);
 
 console.log(`Withdraw block meta: %O`, withdrawBlockMeta);
 
 // Waiting for finalization
 
 console.log(`Wait until EL block #${withdrawBlockMeta.chainHeight} becomes finalized`);
-await common.repeat(async () => {
+await commonUtils.repeat(async () => {
   // NOTE: values sometimes are cached if we ask this a dockerized service
-  const currFinalizedBlock = await common.chainContractCurrFinalizedBlock(wavesApi, chainContractAddress);
+  const currFinalizedBlock = await commonBlockchains.chainContractCurrFinalizedBlock(wavesApi, network.chainContractAddress);
   console.log(`Current finalized height: ${currFinalizedBlock.chainHeight}`);
   return currFinalizedBlock.chainHeight < withdrawBlockMeta.chainHeight ? null : true;
 }, 2000);
@@ -155,7 +135,7 @@ await common.repeat(async () => {
 function signWithdraw(blockHash: string, proofs: any[], withdrawIndex: number, amountInWei: string) {
   return wavesTransactions.invokeScript(
     {
-      dApp: chainContractAddress,
+      dApp: network.chainContractAddress,
       call: {
         function: "withdraw",
         args: [
@@ -197,4 +177,5 @@ const withdrawSignedTx = signWithdraw(blockHash, proofs, withdrawIndex, transfer
 // Sending the withdraw transaction to CL
 
 const withdrawSendSignedTxResult = await wavesApi.transactions.broadcast(withdrawSignedTx);
-console.log('CL withdrawal result:', withdrawSendSignedTxResult);
+console.log('CL withdrawal result:');
+console.dir(withdrawSendSignedTxResult, { depth: null });
