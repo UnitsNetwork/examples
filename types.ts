@@ -8,7 +8,12 @@ export interface WavesNetwork {
 }
 
 export interface ElToClTransfer {
-  recipient: string,
+  recipientAddressB58: string,
+  amount: string
+}
+
+export interface ClToElTransfer {
+  elRecipientAddress: string,
   amount: string
 }
 

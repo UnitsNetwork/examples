@@ -38,7 +38,7 @@ const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey:
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
 
 const transfer: ElToClTransfer = {
-  recipient: clAccountAddress,
+  recipientAddressB58: clAccountAddress,
   amount: Web3.utils.toWei(amount, 'ether')
 };
 
@@ -60,7 +60,7 @@ console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Laye
 
 // Call "sendNative" on Bridge in EL
 async function sendElRequest(transfer: ElToClTransfer, fromAccount: Web3Account, nonce: number, gasPrice: bigint) {
-  const clAccountPkHashBytes = wavesCrypto.base58Decode(transfer.recipient).slice(2, 22);
+  const clAccountPkHashBytes = wavesCrypto.base58Decode(transfer.recipientAddressB58).slice(2, 22);
   const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
   const nonceHex = Web3.utils.toHex(nonce);
   const gasPriceHex = Web3.utils.toWei(gasPrice, "wei");
@@ -177,5 +177,5 @@ const withdrawSignedTx = signWithdraw(blockHash, proofs, withdrawIndex, transfer
 // Sending the withdraw transaction to CL
 
 const withdrawSendSignedTxResult = await wavesApi.transactions.broadcast(withdrawSignedTx);
-console.log('CL withdrawal result:');
+console.log('EL->CL withdrawal result:');
 console.dir(withdrawSendSignedTxResult, { depth: null });

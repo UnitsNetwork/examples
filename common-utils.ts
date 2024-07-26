@@ -26,3 +26,7 @@ export function getArgumentValue(argName: string): string | undefined {
   }
   return undefined;
 }
+
+export function isString(value): value is string {
+  return typeof value === 'string' || value instanceof String;
+}
