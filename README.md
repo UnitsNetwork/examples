@@ -11,21 +11,21 @@ npm i
 ### Transfer from EL to CL (Waves)
 
 ```bash
-npx tsx transfer-el-to-cl.ts --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
+npx tsx transfer-e2c.ts --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 ```
 
 See more options:
 ```bash
-npx tsx transfer-el-to-cl.ts
+npx tsx transfer-e2c.ts
 ```
 
 ### Transfer from CL (Waves) to EL
 
 ```bash
-npx tsx transfer-cl-to-el.ts --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
+npx tsx transfer-c2e.ts --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 ```
 
 See more options:
 ```bash
-npx tsx transfer-cl-to-el.ts
+npx tsx transfer-c2e.ts
 ```

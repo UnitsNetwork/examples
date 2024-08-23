@@ -4,7 +4,7 @@ import * as wavesTransactions from '@waves/waves-transactions';
 import { Web3 } from 'web3';
 import * as commonUtils from './common-utils';
 import { getNetwork } from "./networks";
-import { ClToElTransfer } from "./types";
+import { C2ETransfer } from "./types";
 
 const chainIdStr = commonUtils.getArgumentValue('--chain-id') || 'S'; // StageNet by default
 const chainId = chainIdStr.charCodeAt(0);
@@ -26,6 +26,8 @@ Additional optional arguments:\n\
 }
 
 const network = getNetwork(chainIdStr);
+console.log(`Network: ${network.name}`);
+
 const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey: clAccountPrivateKey });
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
 
@@ -40,7 +42,7 @@ ecApi.eth.defaultAccount = elAccountPrivateKey;
 
 const elAccount = ecApi.eth.accounts.privateKeyToAccount(elAccountPrivateKey);
 
-const transfer: ClToElTransfer = {
+const transfer: C2ETransfer = {
   elRecipientAddress: elAccount.address,
   amount: new BigNumber(amount).mul(new BigNumber(10).pow(8)).toString() // amount * 10^8
 };
@@ -49,7 +51,7 @@ const tokenId = (await wavesApi.addresses.fetchDataKey(network.chainContractAddr
 if (!commonUtils.isString(tokenId)) throw new Error(`Expected tokenId to be a string, got: ${tokenId}`);
 console.log(`Token id: ${tokenId}`);
 
-function signClToElRequest(clSenderPrivateKey: string, chainContractAddress: string, transfer: ClToElTransfer, assetIdB58: String): any {
+function signC2ERequest(clSenderPrivateKey: string, chainContractAddress: string, transfer: C2ETransfer, assetIdB58: String): any {
   return wavesTransactions.invokeScript(
     {
       dApp: chainContractAddress,
@@ -75,7 +77,7 @@ function signClToElRequest(clSenderPrivateKey: string, chainContractAddress: str
 }
 
 console.log(`Sending ${amount} Unit0 from ${clAccountAddress} in Consensus (Waves) Layer to ${elAccount.address} in Execution Layer`);
-const transferSignedTx = signClToElRequest(clAccountPrivateKey, network.chainContractAddress, transfer, tokenId);
+const transferSignedTx = signC2ERequest(clAccountPrivateKey, network.chainContractAddress, transfer, tokenId);
 
 // Sending the transfer transaction to CL
 

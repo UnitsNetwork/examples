@@ -11,7 +11,7 @@ import * as commonUtils from './common-utils';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getNetwork } from './networks.ts';
-import { ElToClTransfer } from './types.ts';
+import { E2CTransfer } from './types.ts';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const chainIdStr = commonUtils.getArgumentValue('--chain-id') || 'S'; // StageNet by default
@@ -34,10 +34,12 @@ Additional optional arguments:\n\
 }
 
 const network = getNetwork(chainIdStr);
+console.log(`Network: ${network.name}`);
+
 const clAccountPublicKey = wavesTransactions.libs.crypto.publicKey({ privateKey: clAccountPrivateKey });
 const clAccountAddress = wavesTransactions.libs.crypto.address({ publicKey: clAccountPublicKey }, chainId);
 
-const transfer: ElToClTransfer = {
+const transfer: E2CTransfer = {
   recipientAddressB58: clAccountAddress,
   amount: Web3.utils.toWei(amount, 'ether')
 };
@@ -59,7 +61,7 @@ const elBridgeContract = new Contract(elBridgeAbi, network.elBridgeAddress, ecAp
 console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Layer to ${clAccountAddress} in Consensus (Waves) Layer`);
 
 // Call "sendNative" on Bridge in EL
-async function sendElRequest(transfer: ElToClTransfer, fromAccount: Web3Account, nonce: number, gasPrice: bigint) {
+async function sendElRequest(transfer: E2CTransfer, fromAccount: Web3Account, nonce: number, gasPrice: bigint) {
   const clAccountPkHashBytes = wavesCrypto.base58Decode(transfer.recipientAddressB58).slice(2, 22);
   const sendNativeCall = elBridgeContract.methods.sendNative(clAccountPkHashBytes);
   const nonceHex = Web3.utils.toHex(nonce);

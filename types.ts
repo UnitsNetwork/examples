@@ -7,12 +7,12 @@ export interface WavesNetwork {
   elBridgeAddress: string;
 }
 
-export interface ElToClTransfer {
+export interface E2CTransfer {
   recipientAddressB58: string,
   amount: string
 }
 
-export interface ClToElTransfer {
+export interface C2ETransfer {
   elRecipientAddress: string,
   amount: string
 }
