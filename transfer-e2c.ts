@@ -46,6 +46,7 @@ const transfer: E2CTransfer = {
 
 const wavesApi = waves.create(network.clNodeApiUrl);
 const elBridgeAddress = await commonBlockchains.currentElBridgeAddress(wavesApi, network.chainContractAddress);
+console.log(`Current bridge address: ${elBridgeAddress}`);
 
 let ecApi = new Web3(network.elNodeApiUrl);
 ecApi.eth.transactionConfirmationBlocks = 1;
