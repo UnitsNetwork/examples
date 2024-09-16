@@ -1,10 +1,10 @@
 import * as waves from '@waves/node-api-js';
 
 export interface WavesNetwork {
+  name: string;
   clNodeApiUrl: string;
   elNodeApiUrl: string;
   chainContractAddress: string;
-  elBridgeAddress: string;
 }
 
 export interface E2CTransfer {
