@@ -35,6 +35,12 @@ export async function chainContractCurrFinalizedBlock(wavesApi: WavesApi, chainC
   return parseBlockMeta(await wavesApi.utils.fetchEvaluate(chainContractAddress, `blockMeta(getStringValue("finalizedBlock"))`));
 }
 
+export async function currentElBridgeAddress(wavesApi: WavesApi, chainContractAddress: string): Promise<string> {
+  const r = await wavesApi.addresses.fetchDataKey(chainContractAddress, 'elBridgeAddress');
+  if (!r.value || r.type != 'string') throw new Error(`Unexpected value of "elBridgeAddress" contract key in response: ${r}`);
+  return r.value;
+}
+
 /**
  * Estimates the gas price based on recent blocks and current gas price.
  * @param web3 The Web3 instance with registered subscription types.

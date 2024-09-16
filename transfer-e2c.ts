@@ -44,7 +44,8 @@ const transfer: E2CTransfer = {
   amount: Web3.utils.toWei(amount, 'ether')
 };
 
-let wavesApi = waves.create(network.clNodeApiUrl);
+const wavesApi = waves.create(network.clNodeApiUrl);
+const elBridgeAddress = await commonBlockchains.currentElBridgeAddress(wavesApi, network.chainContractAddress);
 
 let ecApi = new Web3(network.elNodeApiUrl);
 ecApi.eth.transactionConfirmationBlocks = 1;
@@ -56,7 +57,7 @@ ecApi.eth.defaultAccount = elAccountPrivateKey;
 const elAccount = ecApi.eth.accounts.privateKeyToAccount(elAccountPrivateKey);
 
 const elBridgeAbi = JSON.parse(fs.readFileSync(`${__dirname}/bridge-abi.json`, { encoding: 'utf-8' }));
-const elBridgeContract = new Contract(elBridgeAbi, network.elBridgeAddress, ecApi);
+const elBridgeContract = new Contract(elBridgeAbi, elBridgeAddress, ecApi);
 
 console.log(`Sending ${amount} Unit0 from ${elAccount.address} in Execution Layer to ${clAccountAddress} in Consensus (Waves) Layer`);
 
@@ -103,7 +104,7 @@ console.log(`Block hash: ${blockHash}`);
 
 const logsInElBlock = await ecApi.eth.getPastLogs({
   blockHash: blockHash,
-  address: network.elBridgeAddress,
+  address: elBridgeAddress,
   topics: elBridgeContract.events.SentNative().args.topics
 });
 
