@@ -36,7 +36,11 @@ class ChainContract(ExtendedOracle):
         super().__init__(oracleAddress, seed, pywaves)  # type: ignore
         self.log = logging.getLogger(self.__class__.__name__)
 
-    def elBridgeAddress(self) -> str:
+    def getToken(self) -> pw.Asset:
+        r: str = self.getData("tokenId")
+        return pw.Asset(r)  # type: ignore
+
+    def getElBridgeAddress(self) -> str:
         return self.getData("elBridgeAddress")
 
     def waitForFinalized(self, block: ContractBlock):
@@ -44,7 +48,7 @@ class ChainContract(ExtendedOracle):
 
         def is_finalized():
             finalized_block_str = "Same"
-            curr_finalized_block = self.finalizedBlock()
+            curr_finalized_block = self.getFinalizedBlock()
             if not (
                 last_finalized_block[0]
                 and last_finalized_block[0].hash == curr_finalized_block.hash
@@ -62,18 +66,18 @@ class ChainContract(ExtendedOracle):
 
         def get_block_data():
             try:
-                r = self.blockMeta(block_hash)
+                r = self.getBlockMeta(block_hash)
                 return r
             except Exception:
                 return None
 
         return common_utils.repeat(get_block_data, 2000)
 
-    def finalizedBlock(self) -> ContractBlock:
+    def getFinalizedBlock(self) -> ContractBlock:
         hash = self.getData("finalizedBlock")
-        return self.blockMeta(hash)
+        return self.getBlockMeta(hash)
 
-    def blockMeta(self, hash: str) -> ContractBlock:
+    def getBlockMeta(self, hash: str) -> ContractBlock:
         r = self.evaluate(f'blockMeta("{hash}")')
         meta = r["result"]["value"]
         return ContractBlock(hash, meta)

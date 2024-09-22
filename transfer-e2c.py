@@ -1,6 +1,5 @@
 #!/usr/bin/env .venv/bin/python
 import json
-import logging
 import sys
 from typing import List
 
@@ -16,17 +15,7 @@ from chain_contract import ChainContract
 from merkle import get_merkle_proofs
 from networks import get_network
 
-# Remove a handler from PyWaves
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] %(levelname)s - %(name)s - %(message)s",
-    stream=sys.stdout,
-)
-
-log = logging.getLogger("transfer-e2c")
+log = common_utils.configure_script_logger("transfer-e2c")
 
 cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
 el_account_private_key = common_utils.get_argument_value("--eth-private-key")
@@ -46,8 +35,9 @@ Additional optional arguments:
     exit(1)
 
 network = get_network(chain_id_str)
-pw.setNode(network.cl_node_api_url, network.chain_id_str)
+log.info(f"Network: {network.name}")
 
+pw.setNode(network.cl_node_api_url, network.chain_id_str)
 chain_contract = ChainContract(oracleAddress=network.chain_contract_address)
 cl_account = pw.Address(privateKey=cl_account_private_key)
 
@@ -57,7 +47,7 @@ el_account = w3.eth.account.from_key(el_account_private_key)
 with open("bridge-abi.json") as f:
     el_bridge_abi = json.load(f)
 el_bridge_contract = w3.eth.contract(
-    address=Web3.to_checksum_address(chain_contract.elBridgeAddress()),
+    address=Web3.to_checksum_address(chain_contract.getElBridgeAddress()),
     abi=el_bridge_abi,
 )
 
