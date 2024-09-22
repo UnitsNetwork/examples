@@ -1,15 +1,14 @@
 #!/usr/bin/env .venv/bin/python
+import os
 import sys
 
 import pywaves as pw
 from eth_account.signers.base import BaseAccount
-from web3 import Web3
 
 import common_utils
-from chain_contract import ChainContract
-from networks import get_network
+from networks import select_network
 
-log = common_utils.configure_script_logger("transfer-c2e")
+log = common_utils.configure_script_logger(os.path.basename(__file__))
 
 cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
 el_account_private_key = common_utils.get_argument_value("--eth-private-key")
@@ -28,15 +27,10 @@ Additional optional arguments:
     )
     sys.exit(1)
 
-network = get_network(chain_id_str)
-log.info(f"Network: {network.name}")
+network = select_network(chain_id_str)
 
-pw.setNode(network.cl_node_api_url, network.chain_id_str)
-chain_contract = ChainContract(oracleAddress=network.chain_contract_address)
 cl_account = pw.Address(privateKey=cl_account_private_key)
-
-w3 = Web3(Web3.HTTPProvider(network.el_node_api_url))
-el_account = w3.eth.account.from_key(el_account_private_key)
+el_account = network.w3.eth.account.from_key(el_account_private_key)
 
 # Issued token has 8 decimals, we need to calculate amount in atomic units https://docs.waves.tech/en/blockchain/token/#atomic-unit
 atomic_amount = int(float(user_amount) * 10**8)
@@ -45,7 +39,7 @@ log.info(
     f"Sending {user_amount} Unit0 ({atomic_amount} in atomic units) from {cl_account.address} (C) to {el_account.address} (E)"
 )
 
-token = chain_contract.getToken()
+token = network.cl_chain_contract.getToken()
 log.info(f"[C] Token id: {token.assetId}")
 
 
@@ -57,7 +51,7 @@ def transfer(
     atomic_amount: int,
 ):
     return from_waves_account.invokeScript(
-        dappAddress=chain_contract.oracleAddress,
+        dappAddress=network.cl_chain_contract.oracleAddress,
         functionName="transfer",
         params=[
             {

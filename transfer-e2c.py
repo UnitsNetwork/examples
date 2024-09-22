@@ -1,21 +1,19 @@
 #!/usr/bin/env .venv/bin/python
-import json
+import os
 import sys
 from typing import List
 
 import pywaves as pw
 from base58 import b58decode
 from eth_account.signers.base import BaseAccount
-from eth_utils.abi import event_abi_to_log_topic
 from web3 import Web3
 from web3.types import FilterParams, Nonce, TxParams, Wei
 
 import common_utils
-from chain_contract import ChainContract
 from merkle import get_merkle_proofs
-from networks import get_network
+from networks import select_network
 
-log = common_utils.configure_script_logger("transfer-e2c")
+log = common_utils.configure_script_logger(os.path.basename(__file__))
 
 cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
 el_account_private_key = common_utils.get_argument_value("--eth-private-key")
@@ -34,26 +32,14 @@ Additional optional arguments:
     )
     exit(1)
 
-network = get_network(chain_id_str)
-log.info(f"Network: {network.name}")
+network = select_network(chain_id_str)
 
-pw.setNode(network.cl_node_api_url, network.chain_id_str)
-chain_contract = ChainContract(oracleAddress=network.chain_contract_address)
 cl_account = pw.Address(privateKey=cl_account_private_key)
-
-w3 = Web3(Web3.HTTPProvider(network.el_node_api_url))
-el_account = w3.eth.account.from_key(el_account_private_key)
-
-with open("bridge-abi.json") as f:
-    el_bridge_abi = json.load(f)
-el_bridge_contract = w3.eth.contract(
-    address=Web3.to_checksum_address(chain_contract.getElBridgeAddress()),
-    abi=el_bridge_abi,
-)
+el_account = network.w3.eth.account.from_key(el_account_private_key)
 
 amount = Web3.to_wei(raw_amount, "ether")
 log.info(
-    f"Sending {raw_amount} Unit0 ({amount} Wei) from {el_account.address} (E) to {cl_account.address} (C) using Bridge on {el_bridge_contract.address} (E)"
+    f"Sending {raw_amount} Unit0 ({amount} Wei) from {el_account.address} (E) to {cl_account.address} (C) using Bridge on {network.el_bridge_contract.address} (E)"
 )
 
 
@@ -76,44 +62,45 @@ def send_native(
         "gasPrice": gas_price,
         "value": amount,
     }
-    send_native_call = el_bridge_contract.functions.sendNative(cl_account_pk_hash_bytes)
+    send_native_call = network.el_bridge_contract.functions.sendNative(
+        cl_account_pk_hash_bytes
+    )
     gas = send_native_call.estimate_gas(txn)
     txn.update(
         {
-            "to": el_bridge_contract.address,
+            "to": network.el_bridge_contract.address,
             "gas": gas,
             "data": send_native_call._encode_transaction_data(),
         }
     )
-    signed_tx = w3.eth.account.sign_transaction(txn, el_account_private_key)
+    signed_tx = network.w3.eth.account.sign_transaction(txn, el_account_private_key)
     log.debug(f"[E] Signed sendNative transaction: {Web3.to_json(signed_tx)}")
-    return w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    return network.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
 
 log.info("[E] Call Bridge sendNative")
-current_gas_price_wei = w3.eth.gas_price
+current_gas_price_wei = network.w3.eth.gas_price
 send_native_result = send_native(
     el_account,
     cl_account,
     amount,
-    w3.eth.gas_price,
-    nonce=w3.eth.get_transaction_count(el_account.address),
+    network.w3.eth.gas_price,
+    nonce=network.w3.eth.get_transaction_count(el_account.address),
 )
 
-send_native_receipt = w3.eth.wait_for_transaction_receipt(send_native_result)
+send_native_receipt = network.w3.eth.wait_for_transaction_receipt(send_native_result)
 log.info(f"[E] sendNative receipt: {Web3.to_json(send_native_receipt)}")
 
 block_hash_with_transfer = send_native_receipt.blockHash.hex()
-topic = event_abi_to_log_topic(el_bridge_contract.events.SentNative().abi).hex()
-block_logs = w3.eth.get_logs(
+block_logs = network.w3.eth.get_logs(
     FilterParams(
         blockHash=block_hash_with_transfer,
-        address=el_bridge_contract.address,
-        topics=[topic],
+        address=network.el_bridge_contract.address,
+        topics=[network.el_send_native_topic],
     )
 )
 log.info(
-    f"[E] Bridge logs in block 0x{block_hash_with_transfer} by topic '0x{topic}': {Web3.to_json(block_logs)}"
+    f"[E] Bridge logs in block 0x{block_hash_with_transfer} by topic '0x{network.el_send_native_topic}': {Web3.to_json(block_logs)}"
 )
 
 merkle_leaves = []
@@ -131,9 +118,9 @@ merkle_proofs = get_merkle_proofs(merkle_leaves, transfer_index_in_block)
 log.info(f"[C] Merkle tree proofs for withdraw: {merkle_proofs}")
 
 # Wait for a block confirmation on Consensus layer
-withdraw_block_meta = chain_contract.waitForBlock(block_hash_with_transfer)
+withdraw_block_meta = network.cl_chain_contract.waitForBlock(block_hash_with_transfer)
 log.info(f"[C] Withdraw block meta: {withdraw_block_meta}, wait for finalization")
-chain_contract.waitForFinalized(withdraw_block_meta)
+network.cl_chain_contract.waitForFinalized(withdraw_block_meta)
 
 
 def withdraw(
@@ -156,7 +143,7 @@ def withdraw(
         {"type": "integer", "value": withdraw_amount},
     ]
     return sender.invokeScript(
-        dappAddress=chain_contract.oracleAddress,
+        dappAddress=network.cl_chain_contract.oracleAddress,
         functionName="withdraw",
         params=params,
         txFee=500_000,

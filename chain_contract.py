@@ -47,15 +47,15 @@ class ChainContract(ExtendedOracle):
         last_finalized_block: List[Optional[ContractBlock]] = [None]
 
         def is_finalized():
-            finalized_block_str = "Same"
             curr_finalized_block = self.getFinalizedBlock()
+            message = f"Waiting for {block.chain_height - curr_finalized_block.chain_height} blocks to finalize"
             if not (
                 last_finalized_block[0]
                 and last_finalized_block[0].hash == curr_finalized_block.hash
             ):
                 last_finalized_block[0] = curr_finalized_block
-                finalized_block_str = f"{curr_finalized_block}"
-            self.log.info(f"Current finalized block: {finalized_block_str}")
+                message = f"{curr_finalized_block} finalized"
+            self.log.info(message)
             return curr_finalized_block.chain_height >= block.chain_height
 
         common_utils.repeat(is_finalized, 5000)
