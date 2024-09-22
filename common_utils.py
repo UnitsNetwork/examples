@@ -3,6 +3,8 @@ import sys
 import time
 import base64
 
+from base58 import b58decode
+
 
 def repeat(func, interval_ms=3000.0):
     while True:
@@ -26,6 +28,10 @@ def hex_to_base64(hex_string: str) -> str:
     bytes_data = bytes.fromhex(hex_string)
     base64_data = base64.b64encode(bytes_data)
     return base64_data.decode("utf-8")
+
+
+def waves_public_key_hash_bytes(waves_address: str):
+    return b58decode(waves_address)[2:22]
 
 
 def configure_script_logger(name: str) -> logging.Logger:

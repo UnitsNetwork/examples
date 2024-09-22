@@ -4,7 +4,6 @@ import sys
 from typing import List
 
 import pywaves as pw
-from base58 import b58decode
 from eth_account.signers.base import BaseAccount
 from web3 import Web3
 from web3.types import FilterParams, Nonce, TxParams, Wei
@@ -43,10 +42,6 @@ log.info(
 )
 
 
-def waves_public_key_hash_bytes(waves_address: str):
-    return b58decode(waves_address)[2:22]
-
-
 # Send a request from EL to CL
 def send_native(
     from_eth_account: BaseAccount,
@@ -55,7 +50,9 @@ def send_native(
     gas_price: Wei,
     nonce: Nonce = Nonce(0),
 ):
-    cl_account_pk_hash_bytes = waves_public_key_hash_bytes(to_waves_account.address)
+    cl_account_pk_hash_bytes = common_utils.waves_public_key_hash_bytes(
+        to_waves_account.address
+    )
     txn: TxParams = {
         "from": from_eth_account.address,
         "nonce": nonce,
