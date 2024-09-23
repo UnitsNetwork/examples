@@ -4,8 +4,8 @@ import os
 from pywaves import pw
 from web3 import Web3
 
-from bridge import Bridge
-from chain_contract import ChainContract
+from units_network.bridge import Bridge
+from units_network.chain_contract import ChainContract
 
 
 class NetworkSettings:

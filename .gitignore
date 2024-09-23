@@ -1,4 +1,5 @@
 .idea
 .venv
-node_modules/
 *.log
+build/
+*.egg-info/

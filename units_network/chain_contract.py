@@ -6,7 +6,7 @@ import requests
 from eth_account.signers.base import BaseAccount
 from web3.types import Wei
 
-import common_utils
+from units_network import common_utils
 
 
 class ContractBlock(object):

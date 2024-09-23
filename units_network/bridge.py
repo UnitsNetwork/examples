@@ -1,16 +1,16 @@
 import json
 import logging
 from typing import List, TypedDict
+import importlib.resources as pkg_resources
 
 from eth_account.signers.base import BaseAccount
-from eth_account.types import TransactionDictType
 from eth_typing import HexStr
 from eth_utils.abi import event_abi_to_log_topic
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import FilterParams, Nonce, TxParams, Wei
 
-from merkle import get_merkle_proofs
+from units_network.merkle import get_merkle_proofs
 
 
 class E2CTransferParams(TypedDict):
@@ -25,7 +25,7 @@ class Bridge(object):
         self.w3 = w3
         self.address = Web3.to_checksum_address(el_bridge_address)
 
-        with open("bridge-abi.json") as f:
+        with pkg_resources.open_text("units_network", "bridge-abi.json") as f:
             el_bridge_abi = json.load(f)
 
         self.contract = self.w3.eth.contract(
@@ -66,8 +66,9 @@ class Bridge(object):
                 "data": send_native_call._encode_transaction_data(),
             }
         )
-        signed_tx = from_eth_account.sign_transaction(txn)
-        self.log.debug(f"Signed sendNative transaction: {Web3.to_json(signed_tx)}")
+        signed_tx = from_eth_account.sign_transaction(txn)  # type: ignore
+        self.log.debug(f"Signed sendNative transaction: {Web3.to_json(signed_tx)}")  # type: ignore
+
         return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
     def getTransferProofs(
