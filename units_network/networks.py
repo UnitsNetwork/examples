@@ -62,10 +62,14 @@ class Network:
         self.w3 = Web3(Web3.HTTPProvider(settings.el_node_api_url))
         self.el_bridge = Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
 
+    @staticmethod
+    def select(chain_id_str: str):
+        s = get_network_settings(chain_id_str)
+        return Network.create_manual(s)
 
-def select_network(chain_id_str: str) -> Network:
-    s = get_network_settings(chain_id_str)
-    log = logging.getLogger(os.path.basename(__file__))
-    log.info(f"Selected {s.name}")
-    pw.setNode(s.cl_node_api_url, s.chain_id_str)
-    return Network(s)
+    @staticmethod
+    def create_manual(settings: NetworkSettings):
+        log = logging.getLogger(__class__.__name__)
+        log.info(f"Selected {settings.name}")
+        pw.setNode(settings.cl_node_api_url, settings.chain_id_str)
+        return Network(settings)

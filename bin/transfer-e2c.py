@@ -7,7 +7,7 @@ from web3 import Web3
 from web3.types import TxReceipt
 
 from units_network import common_utils
-from units_network.networks import select_network
+from units_network.networks import Network
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
         )
         exit(1)
 
-    network = select_network(chain_id_str)
+    network = Network.select(chain_id_str)
 
     cl_account = pw.Address(privateKey=cl_account_private_key)
     el_account = network.w3.eth.account.from_key(el_account_private_key)
