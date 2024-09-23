@@ -43,27 +43,8 @@ token = network.cl_chain_contract.getToken()
 log.info(f"[C] Token id: {token.assetId}")
 
 
-# Sign the transfer request
-def transfer(
-    from_waves_account: pw.Address,
-    to_eth_account: BaseAccount,
-    token: pw.Asset,
-    atomic_amount: int,
-):
-    return from_waves_account.invokeScript(
-        dappAddress=network.cl_chain_contract.oracleAddress,
-        functionName="transfer",
-        params=[
-            {
-                "type": "string",
-                "value": to_eth_account.address.lower()[2:],  # Remove '0x' prefix
-            }
-        ],
-        payments=[{"amount": atomic_amount, "assetId": token.assetId}],
-        txFee=500_000,
-    )
-
-
-transfer_result = transfer(cl_account, el_account, token, atomic_amount)
+transfer_result = network.cl_chain_contract.transfer(
+    cl_account, el_account, token, atomic_amount
+)
 log.info(f"[C] Transfer result: {transfer_result}")
 log.info("Done")

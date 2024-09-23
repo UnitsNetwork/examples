@@ -1,11 +1,10 @@
-import json
 import logging
 import os
 
-from eth_utils.abi import event_abi_to_log_topic
 from pywaves import pw
 from web3 import Web3
 
+from bridge import Bridge
 from chain_contract import ChainContract
 
 
@@ -61,19 +60,7 @@ class Network:
             oracleAddress=settings.chain_contract_address
         )
         self.w3 = Web3(Web3.HTTPProvider(settings.el_node_api_url))
-
-        with open("bridge-abi.json") as f:
-            el_bridge_abi = json.load(f)
-
-        self.el_bridge_contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(
-                self.cl_chain_contract.getElBridgeAddress()
-            ),
-            abi=el_bridge_abi,
-        )
-        self.el_send_native_topic = event_abi_to_log_topic(
-            self.el_bridge_contract.events.SentNative().abi
-        ).hex()
+        self.el_bridge = Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
 
 
 def select_network(chain_id_str: str) -> Network:

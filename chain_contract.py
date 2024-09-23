@@ -1,8 +1,12 @@
+import logging
 from typing import List, Optional
+
 import pywaves as pw
 import requests
+from eth_account.signers.base import BaseAccount
+from web3.types import Wei
+
 import common_utils
-import logging
 
 
 class ContractBlock(object):
@@ -81,3 +85,49 @@ class ChainContract(ExtendedOracle):
         r = self.evaluate(f'blockMeta("{hash}")')
         meta = r["result"]["value"]
         return ContractBlock(hash, meta)
+
+    def transfer(
+        self,
+        from_waves_account: pw.Address,
+        to_eth_account: BaseAccount,
+        token: pw.Asset,
+        atomic_amount: int,
+    ):
+        return from_waves_account.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="transfer",
+            params=[
+                {
+                    "type": "string",
+                    "value": to_eth_account.address.lower()[2:],  # Remove '0x' prefix
+                }
+            ],
+            payments=[{"amount": atomic_amount, "assetId": token.assetId}],
+            txFee=500_000,
+        )
+
+    def withdraw(
+        self,
+        sender: pw.Address,
+        block_hash_with_transfer: str,
+        merkle_proofs: List[str],
+        transfer_index_in_block: int,
+        amount: Wei,
+    ):
+        proofs = [
+            {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
+            for p in merkle_proofs
+        ]
+        withdraw_amount = amount // (10**10)
+        params = [
+            {"type": "string", "value": block_hash_with_transfer},
+            {"type": "list", "value": proofs},
+            {"type": "integer", "value": transfer_index_in_block},
+            {"type": "integer", "value": withdraw_amount},
+        ]
+        return sender.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="withdraw",
+            params=params,
+            txFee=500_000,
+        )
