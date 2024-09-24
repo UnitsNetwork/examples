@@ -40,6 +40,10 @@ class ChainContract(ExtendedOracle):
         super().__init__(oracleAddress, seed, pywaves)  # type: ignore
         self.log = logging.getLogger(self.__class__.__name__)
 
+    def isContractSetup(self) -> bool:
+        r = self.evaluate("isContractSetup()")
+        return r and r["result"] and r["result"]["value"]
+
     def getToken(self) -> pw.Asset:
         r: str = self.getData("tokenId")
         return pw.Asset(r)  # type: ignore
