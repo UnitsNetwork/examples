@@ -71,5 +71,5 @@ class Network:
     def create_manual(settings: NetworkSettings):
         log = logging.getLogger(__class__.__name__)
         log.info(f"Selected {settings.name}")
-        pw.setNode(settings.cl_node_api_url, settings.chain_id_str)
+        pw.setNode(settings.cl_node_api_url, settings.name, settings.chain_id_str)
         return Network(settings)
