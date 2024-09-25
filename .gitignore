@@ -1,5 +1,6 @@
-.idea
-.venv
-*.log
+.idea/
+.venv/
+__pycache__/
 build/
 *.egg-info/
+*.log

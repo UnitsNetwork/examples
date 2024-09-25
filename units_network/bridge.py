@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import logging
 from typing import List, TypedDict
@@ -13,7 +14,8 @@ from web3.types import FilterParams, Nonce, TxParams, Wei
 from units_network.merkle import get_merkle_proofs
 
 
-class E2CTransferParams(TypedDict):
+@dataclass()
+class E2CTransferParams:
     block_with_transfer_hash: HexBytes
     merkle_proofs: List[str]
     transfer_index_in_block: int
@@ -94,8 +96,8 @@ class Bridge(object):
             if x["transactionHash"] == transfer_txn_hash:
                 transfer_index_in_block = i
 
-        return {
-            "block_with_transfer_hash": block_hash,
-            "merkle_proofs": get_merkle_proofs(merkle_leaves, transfer_index_in_block),
-            "transfer_index_in_block": transfer_index_in_block,
-        }
+        return E2CTransferParams(
+            block_with_transfer_hash=block_hash,
+            merkle_proofs=get_merkle_proofs(merkle_leaves, transfer_index_in_block),
+            transfer_index_in_block=transfer_index_in_block,
+        )

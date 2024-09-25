@@ -41,7 +41,6 @@ def main():
     )
 
     log.info("[E] Call Bridge sendNative")
-    current_gas_price_wei = network.w3.eth.gas_price
     send_native_result = network.el_bridge.sendNative(
         from_eth_account=el_account,
         to_waves_pk_hash=common_utils.waves_public_key_hash_bytes(cl_account.address),
@@ -53,23 +52,23 @@ def main():
     )
     log.info(f"[E] sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
 
-    proofs = network.el_bridge.getTransferProofs(
+    transfer_params = network.el_bridge.getTransferProofs(
         send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
     )
-    log.info(f"[C] Transfer params: {Web3.to_json(proofs)}")  # type: ignore
+    log.info(f"[C] Transfer params: {transfer_params}")
 
     # Wait for a block confirmation on Consensus layer
     withdraw_block_meta = network.cl_chain_contract.waitForBlock(
-        proofs["block_with_transfer_hash"].hex()
+        transfer_params.block_with_transfer_hash.hex()
     )
     log.info(f"[C] Withdraw block meta: {withdraw_block_meta}, wait for finalization")
     network.cl_chain_contract.waitForFinalized(withdraw_block_meta)
 
     withdraw_result = network.cl_chain_contract.withdraw(
         cl_account,
-        proofs["block_with_transfer_hash"].hex(),
-        proofs["merkle_proofs"],
-        proofs["transfer_index_in_block"],
+        transfer_params.block_with_transfer_hash.hex(),
+        transfer_params.merkle_proofs,
+        transfer_params.transfer_index_in_block,
         amount,
     )
     log.info(f"[C] Withdraw result: {withdraw_result}")
