@@ -52,7 +52,7 @@ def main():
     )
     log.info(f"[E] sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
 
-    transfer_params = network.el_bridge.getTransferProofs(
+    transfer_params = network.el_bridge.getTransferParams(
         send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
     )
     log.info(f"[C] Transfer params: {transfer_params}")

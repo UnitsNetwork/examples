@@ -73,7 +73,7 @@ class Bridge(object):
 
         return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
-    def getTransferProofs(
+    def getTransferParams(
         self, block_hash: HexBytes, transfer_txn_hash: HexBytes
     ) -> E2CTransferParams:
         block_hash_hex = block_hash.hex()
