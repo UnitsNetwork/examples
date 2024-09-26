@@ -1,6 +1,7 @@
 import logging
-
+import os
 from functools import cached_property
+
 from pywaves import pw
 from web3 import Web3
 
@@ -65,14 +66,14 @@ class Network:
     def el_bridge(self):
         return Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
 
-    @staticmethod
-    def select(chain_id_str: str):
-        s = get_network_settings(chain_id_str)
-        return Network.create_manual(s)
 
-    @staticmethod
-    def create_manual(settings: NetworkSettings):
-        log = logging.getLogger(__class__.__name__)
-        log.info(f"Selected {settings.name} ({settings.chain_id_str})")
-        pw.setNode(settings.cl_node_api_url, settings.name, settings.chain_id_str)
-        return Network(settings)
+def select(chain_id_str: str):
+    s = get_network_settings(chain_id_str)
+    return create_manual(s)
+
+
+def create_manual(settings: NetworkSettings):
+    log = logging.getLogger(os.path.basename(__file__))
+    log.info(f"Selected {settings.name} ({settings.chain_id_str})")
+    pw.setNode(settings.cl_node_api_url, settings.name, settings.chain_id_str)
+    return Network(settings)

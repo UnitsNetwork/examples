@@ -5,8 +5,7 @@ import sys
 
 import pywaves as pw
 from hexbytes import HexBytes
-from units_network import common_utils
-from units_network.networks import Network
+from units_network import common_utils, networks
 from web3 import Web3
 from web3.types import TxData
 
@@ -31,7 +30,7 @@ Additional optional arguments:
 
     txn_hash = HexBytes(bytes.fromhex(common_utils.clean_hex_prefix(raw_txn_hash)))
 
-    network = Network.select(chain_id_str)
+    network = networks.select(chain_id_str)
 
     cl_account = pw.Address(privateKey=cl_account_private_key)
 

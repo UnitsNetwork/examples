@@ -3,8 +3,7 @@ import os
 import sys
 
 import pywaves as pw
-from units_network import common_utils, units
-from units_network.networks import Network
+from units_network import common_utils, networks, units
 
 
 def main():
@@ -32,7 +31,7 @@ Additional optional arguments:
         )
         sys.exit(1)
 
-    network = Network.select(chain_id_str)
+    network = networks.select(chain_id_str)
 
     cl_account = pw.Address(privateKey=cl_account_private_key)
     el_account = network.w3.eth.account.from_key(el_account_private_key)
