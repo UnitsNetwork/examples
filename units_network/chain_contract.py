@@ -2,10 +2,10 @@ import logging
 from typing import List, Optional
 
 import pywaves as pw
+import requests
+from eth_typing import HexAddress
 from pywaves.address import TxSigner
 from pywaves.txGenerator import TxGenerator
-import requests
-from eth_account.signers.base import BaseAccount
 from web3.types import Wei
 
 from units_network import common_utils
@@ -95,7 +95,7 @@ class ChainContract(ExtendedOracle):
     def transfer(
         self,
         from_waves_account: pw.Address,
-        to_eth_account: BaseAccount,
+        to_eth_address: HexAddress,
         token: pw.Asset,
         atomic_amount: int,
     ):
@@ -105,7 +105,7 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": to_eth_account.address.lower()[2:],  # Remove '0x' prefix
+                    "value": to_eth_address.lower()[2:],  # Remove '0x' prefix
                 }
             ],
             payments=[{"amount": atomic_amount, "assetId": token.assetId}],
