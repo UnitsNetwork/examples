@@ -8,7 +8,11 @@ setup(
     package_data={
         "units_network": ["bridge-abi.json"],
     },
-    scripts=["bin/transfer-c2e.py", "bin/transfer-e2c.py"],
+    scripts=[
+        "bin/transfer-c2e.py",
+        "bin/transfer-e2c.py",
+        "bin/transfer-e2c-withdraw.py",
+    ],
     install_requires=["pywaves==1.0.5", "web3==7.2.0", "pymerkle==6.1.0"],
     description="Scripts and classes to interact with Unit0",
     url="https://github.com/UnitsNetwork/examples",

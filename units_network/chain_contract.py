@@ -2,6 +2,8 @@ import logging
 from typing import List, Optional
 
 import pywaves as pw
+from pywaves.address import TxSigner
+from pywaves.txGenerator import TxGenerator
 import requests
 from eth_account.signers.base import BaseAccount
 from web3.types import Wei
@@ -118,6 +120,26 @@ class ChainContract(ExtendedOracle):
         transfer_index_in_block: int,
         amount: Wei,
     ):
+        txn = self.prepareWithdraw(
+            sender,
+            block_hash_with_transfer,
+            merkle_proofs,
+            transfer_index_in_block,
+            amount,
+        )
+        return sender.broadcastTx(txn)
+
+    def prepareWithdraw(
+        self,
+        sender: pw.Address,
+        block_hash_with_transfer: str,
+        merkle_proofs: List[str],
+        transfer_index_in_block: int,
+        amount: Wei,
+    ):
+        generator = TxGenerator(self.pw)
+        signer = TxSigner(self.pw)
+
         proofs = [
             {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
             for p in merkle_proofs
@@ -129,9 +151,12 @@ class ChainContract(ExtendedOracle):
             {"type": "integer", "value": transfer_index_in_block},
             {"type": "integer", "value": withdraw_amount},
         ]
-        return sender.invokeScript(
+        txn = generator.generateInvokeScript(
+            publicKey=sender.publicKey,
             dappAddress=self.oracleAddress,
             functionName="withdraw",
             params=params,
             txFee=500_000,
         )
+        signer.signTx(txn, privateKey=sender.privateKey)
+        return txn

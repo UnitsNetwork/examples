@@ -1,4 +1,4 @@
-#!/usr/bin/env .venv/bin/python
+#!/usr/bin/env python
 import os
 import sys
 
@@ -17,14 +17,19 @@ def main():
     chain_id_str = common_utils.get_argument_value("--chain-id") or "S"
     user_amount = float(common_utils.get_argument_value("--amount") or "0.01")
 
-    if not (cl_account_private_key and el_account_private_key and user_amount > 0):
+    if not (
+        cl_account_private_key
+        and el_account_private_key
+        and el_account_private_key.startswith("0x")
+        and user_amount > 0
+    ):
         print(
             """Transfer native tokens from Execution Layer (Ethereum) to Consensus Layer (Waves).
-    At least two arguments required:
-    ./transfer-e2c.ts --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> 
-    Additional optional arguments:
-    --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. Not supported for now: W - MainNet
-    --amount N (default: 0.01): amount of transferred Unit0 tokens""",
+Required arguments:
+  transfer-e2c.py --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> 
+Additional optional arguments:
+  --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. Not supported for now: W - MainNet
+  --amount N (default: 0.01): amount of transferred Unit0 tokens""",
             file=sys.stderr,
         )
         exit(1)

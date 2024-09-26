@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+import importlib.resources as pkg_resources
 import json
 import logging
-from typing import List, TypedDict
-import importlib.resources as pkg_resources
+from dataclasses import dataclass
+from typing import List
 
 from eth_account.signers.base import BaseAccount
 from eth_typing import HexStr
