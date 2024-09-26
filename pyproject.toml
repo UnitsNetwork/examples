@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "units-network"
+version = "0.1"
+description = "Scripts and classes to interact with Unit0"
+dependencies = ["pywaves~=1.0", "web3~=7.2", "pymerkle~=6.1"]
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT License" }
+keywords = ["units network", "blockchain", "waves"]
+
+[project.urls]
+Homepage = "https://github.com/UnitsNetwork/examples"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+"units_network" = ["bridge-abi.json"]
+
+[project.scripts]
+u0-transfer-c2e = "units_network.scripts.transfer_c2e:main"
+u0-transfer-e2c = "units_network.scripts.transfer_e2c:main"
+u0-transfer-e2c-withdraw = "units_network.scripts.transfer_e2c_withdraw:main"

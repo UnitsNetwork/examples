@@ -1,4 +1,4 @@
-import importlib.resources as pkg_resources
+from importlib.resources import files
 import json
 import logging
 from dataclasses import dataclass
@@ -27,8 +27,10 @@ class Bridge(object):
         self.w3 = w3
         self.address = Web3.to_checksum_address(el_bridge_address)
 
-        with pkg_resources.open_text("units_network", "bridge-abi.json") as f:
-            el_bridge_abi = json.load(f)
+        el_bridge_abi_text = (
+            files("units_network").joinpath("bridge-abi.json").read_text()
+        )
+        el_bridge_abi = json.loads(el_bridge_abi_text)
 
         self.contract = self.w3.eth.contract(
             address=self.address,
