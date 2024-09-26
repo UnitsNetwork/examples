@@ -3,8 +3,7 @@ import os
 import sys
 
 import pywaves as pw
-
-from units_network import common_utils
+from units_network import common_utils, units
 from units_network.networks import Network
 
 
@@ -14,9 +13,9 @@ def main():
     cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
     el_account_private_key = common_utils.get_argument_value("--eth-private-key")
     chain_id_str = common_utils.get_argument_value("--chain-id") or "S"
-    user_amount = common_utils.get_argument_value("--amount") or "0.01"
+    user_amount = float(common_utils.get_argument_value("--amount") or "0.01")
 
-    if not (cl_account_private_key and el_account_private_key):
+    if not (cl_account_private_key and el_account_private_key and user_amount > 0):
         print(
             """Transfer native tokens from Consensus Layer (Waves) to Execution Layer (Ethereum).
     At least two arguments required:
@@ -33,8 +32,7 @@ def main():
     cl_account = pw.Address(privateKey=cl_account_private_key)
     el_account = network.w3.eth.account.from_key(el_account_private_key)
 
-    # Issued token has 8 decimals, we need to calculate amount in atomic units https://docs.waves.tech/en/blockchain/token/#atomic-unit
-    atomic_amount = int(float(user_amount) * 10**8)
+    atomic_amount = units.raw_to_waves_atomic_amount(user_amount)
 
     log.info(
         f"Sending {user_amount} Unit0 ({atomic_amount} in atomic units) from {cl_account.address} (C) to {el_account.address} (E)"
