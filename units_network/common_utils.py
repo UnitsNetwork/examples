@@ -2,6 +2,7 @@ import logging
 import sys
 import time
 import base64
+from typing import Optional
 
 from base58 import b58decode
 
@@ -34,15 +35,23 @@ def waves_public_key_hash_bytes(waves_address: str):
     return b58decode(waves_address)[2:22]
 
 
-def configure_script_logger(name: str) -> logging.Logger:
+def clean_hex_prefix(hex: str) -> str:
+    return hex[2:] if hex.startswith("0x") else hex
+
+
+def configure_script_logger(name: str, to_file: Optional[str] = None) -> logging.Logger:
     # Remove a handler from PyWaves
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
 
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if to_file:
+        handlers.append(logging.FileHandler(to_file, mode="a"))
+
     logging.basicConfig(
         level=logging.INFO,
         format="[%(asctime)s] %(levelname)s - %(name)s - %(message)s",
-        stream=sys.stdout,
+        handlers=handlers,
     )
 
     return logging.getLogger(name)
