@@ -137,8 +137,8 @@ class ChainContract(ExtendedOracle):
         transfer_index_in_block: int,
         amount: Wei,
     ):
-        generator = TxGenerator(self.pw)
-        signer = TxSigner(self.pw)
+        generator = TxGenerator(self.pw)  # type: ignore
+        signer = TxSigner(self.pw)  # type: ignore
 
         proofs = [
             {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
