@@ -76,8 +76,12 @@ def select(chain_id_str: str):
     return create_manual(s)
 
 
-def create_manual(settings: NetworkSettings):
+def create_manual(settings: NetworkSettings) -> Network:
+    prepare(settings)
+    return Network(settings)
+
+
+def prepare(settings: NetworkSettings) -> None:
     log = logging.getLogger(os.path.basename(__file__))
     log.info(f"Selected {settings.name} ({settings.chain_id_str})")
     pw.setNode(settings.cl_node_api_url, settings.name, settings.chain_id_str)
-    return Network(settings)
