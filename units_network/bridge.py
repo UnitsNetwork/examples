@@ -1,14 +1,16 @@
-from importlib.resources import files
 import json
 import logging
 from dataclasses import dataclass
-from typing import List
+from importlib.resources import files
+from time import sleep
+from typing import List, Tuple
 
 from eth_account.signers.base import BaseAccount
-from eth_typing import HexStr
+from eth_typing import BlockNumber, HexStr
 from eth_utils.abi import event_abi_to_log_topic
 from hexbytes import HexBytes
 from web3 import Web3
+from web3.exceptions import BlockNotFound
 from web3.types import FilterParams, Nonce, TxParams, Wei
 
 from units_network.merkle import get_merkle_proofs
@@ -103,3 +105,40 @@ class Bridge(object):
             merkle_proofs=get_merkle_proofs(merkle_leaves, transfer_index_in_block),
             transfer_index_in_block=transfer_index_in_block,
         )
+
+    def waitForWithdrawals(
+        self,
+        from_height: BlockNumber,
+        expected_withdrawals: List[Tuple[BaseAccount, Wei]],
+    ):
+        missing = len(expected_withdrawals)
+        while True:
+            try:
+                curr_block = self.w3.eth.get_block(from_height)
+                assert "number" in curr_block and "hash" in curr_block
+
+                if curr_block:
+                    withdrawals = curr_block.get("withdrawals", [])
+                    self.log.info(
+                        f"Found block #{curr_block['number']}: 0x{curr_block['hash'].hex()} with withdrawals: {Web3.to_json(withdrawals)}"  # type: ignore
+                    )
+                    for w in withdrawals:
+                        withdrawal_address = w["address"].lower()
+                        withdrawal_amount = Web3.to_wei(w["amount"], "gwei")
+                        for el_account, wei_amount in expected_withdrawals:
+                            if (
+                                withdrawal_address == el_account.address.lower()
+                                and withdrawal_amount == wei_amount
+                            ):
+                                self.log.info(f"Found {el_account}, {wei_amount}: {w}")
+                                missing -= 1
+
+                    if missing <= 0:
+                        self.log.info("Found all withdrawals")
+                        break
+
+                    from_height = BlockNumber(from_height + 1)
+            except BlockNotFound:
+                pass
+
+            sleep(2)

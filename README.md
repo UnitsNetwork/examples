@@ -1,10 +1,9 @@
 # Unit0 examples
 
-## Install
+## Setup for development
 
 - nix: `nix develop`
-- other Linux and macOS: `./setup.sh`
-  If you want to develop, active the virtual environment: `source .venv/bin/activate`
+- other Linux and macOS: `./dev-setup.sh; source .venv/bin/activate`
 
 ## Usage
 

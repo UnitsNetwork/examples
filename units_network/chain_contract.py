@@ -2,13 +2,14 @@ import logging
 from typing import List, Optional
 
 import pywaves as pw
-import requests
-from eth_typing import HexAddress
+from eth_typing import HexAddress, HexStr
 from pywaves.address import TxSigner
 from pywaves.txGenerator import TxGenerator
+from web3 import Web3
 from web3.types import Wei
 
 from units_network import common_utils
+from units_network.extended_oracle import ExtendedOracle
 
 
 class ContractBlock(object):
@@ -21,20 +22,6 @@ class ContractBlock(object):
         return (
             f"ContractBlock({self.hash}, h={self.chain_height}, e={self.epoch_number})"
         )
-
-
-class ExtendedOracle(pw.Oracle):
-    def evaluate(self, query):
-        url = f"{self.pw.NODE}/utils/script/evaluate/{self.oracleAddress}"
-        headers = {"Content-Type": "application/json"}
-        data = {"expr": query}
-
-        response = requests.post(url, headers=headers, json=data)
-
-        if response.status_code == 200:
-            return response.json()
-        else:
-            raise Exception(f"Error: {response.status_code}, {response.text}")
 
 
 class ChainContract(ExtendedOracle):
@@ -92,12 +79,58 @@ class ChainContract(ExtendedOracle):
         meta = r["result"]["value"]
         return ContractBlock(hash, meta)
 
+    def setScript(self, script: str, txFee: int = 3_200_000):
+        return self.oracleAcc.setScript(script, txFee)
+
+    def setup(
+        self,
+        elGenesisBlockHash: HexStr,
+        minerRewardInTokens: float = 2.0,
+        txFee: int = 100_500_000,
+    ):
+        minerRewardInWei = int(minerRewardInTokens * 10**18)
+        minerRewardInGwei = Web3.from_wei(minerRewardInWei, "gwei")
+        return self.oracleAcc.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="setup",
+            params=[
+                {
+                    "type": "string",
+                    "value": common_utils.clean_hex_prefix(elGenesisBlockHash),
+                },
+                {
+                    "type": "integer",
+                    "value": minerRewardInGwei,
+                },
+            ],
+            txFee=txFee,
+        )
+
+    def join(
+        self,
+        miner: pw.Address,
+        elRewardAddress: HexStr,
+        txFee: int = 500_000,
+    ):
+        return miner.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="join",
+            params=[
+                {
+                    "type": "binary",
+                    "value": f"base64:{common_utils.hex_to_base64(common_utils.clean_hex_prefix(elRewardAddress))}",
+                },
+            ],
+            txFee=txFee,
+        )
+
     def transfer(
         self,
         from_waves_account: pw.Address,
         to_eth_address: HexAddress,
         token: pw.Asset,
         atomic_amount: int,
+        txFee: int = 500_000,
     ):
         return from_waves_account.invokeScript(
             dappAddress=self.oracleAddress,
@@ -105,11 +138,11 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": to_eth_address.lower()[2:],  # Remove '0x' prefix
+                    "value": common_utils.clean_hex_prefix(to_eth_address).lower(),
                 }
             ],
             payments=[{"amount": atomic_amount, "assetId": token.assetId}],
-            txFee=500_000,
+            txFee=txFee,
         )
 
     def withdraw(
@@ -119,6 +152,7 @@ class ChainContract(ExtendedOracle):
         merkle_proofs: List[str],
         transfer_index_in_block: int,
         amount: Wei,
+        txFee: int = 500_000,
     ):
         txn = self.prepareWithdraw(
             sender,
@@ -126,6 +160,7 @@ class ChainContract(ExtendedOracle):
             merkle_proofs,
             transfer_index_in_block,
             amount,
+            txFee,
         )
         return sender.broadcastTx(txn)
 
@@ -136,6 +171,7 @@ class ChainContract(ExtendedOracle):
         merkle_proofs: List[str],
         transfer_index_in_block: int,
         amount: Wei,
+        txFee: int = 500_000,
     ):
         generator = TxGenerator(self.pw)  # type: ignore
         signer = TxSigner(self.pw)  # type: ignore
@@ -156,7 +192,7 @@ class ChainContract(ExtendedOracle):
             dappAddress=self.oracleAddress,
             functionName="withdraw",
             params=params,
-            txFee=500_000,
+            txFee=txFee,
         )
         signer.signTx(txn, privateKey=sender.privateKey)
         return txn

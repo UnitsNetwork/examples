@@ -11,7 +11,7 @@
           mkShell {
             buildInputs = [ python312 python312Packages.pip gcc13 ];
             shellHook = ''
-              sh ./setup.sh
+              sh ./dev-setup.sh
               source .venv/bin/activate
             '';
           };
