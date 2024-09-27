@@ -130,7 +130,7 @@ class Bridge(object):
                                 withdrawal_address == el_account.address.lower()
                                 and withdrawal_amount == wei_amount
                             ):
-                                self.log.info(f"Found {el_account}, {wei_amount}: {w}")
+                                self.log.info(f"Found an expected withdrawal: {w}")
                                 missing -= 1
 
                     if missing <= 0:
