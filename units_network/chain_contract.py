@@ -9,6 +9,7 @@ from web3 import Web3
 from web3.types import Wei
 
 from units_network import common_utils
+from units_network.extended_address import ExtendedAddress
 from units_network.extended_oracle import ExtendedOracle
 
 
@@ -31,7 +32,7 @@ class ChainContract(ExtendedOracle):
         if seed is None:
             self.oracleAddress = oracleAddress
         else:
-            self.oracleAcc = self.pw.Address(seed=seed, nonce=nonce)
+            self.oracleAcc = ExtendedAddress(seed=seed, nonce=nonce)
             self.oracleAddress = self.oracleAcc.address
         self.log = logging.getLogger(self.__class__.__name__)
 
