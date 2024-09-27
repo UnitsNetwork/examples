@@ -43,7 +43,7 @@ Additional optional arguments:
         f"Sending {user_amount} Unit0 ({wei_amount} Wei) from {el_account.address} (E) to {cl_account.address} (C) using Bridge on {network.el_bridge.address} (E)"
     )
 
-    log.info("[E] Call Bridge sendNative")
+    log.info("[E] Call Bridge.sendNative")
     send_native_result = network.el_bridge.sendNative(
         from_eth_account=el_account,
         to_waves_pk_hash=common_utils.waves_public_key_hash_bytes(cl_account.address),
@@ -53,7 +53,7 @@ Additional optional arguments:
     send_native_receipt: TxReceipt = network.w3.eth.wait_for_transaction_receipt(
         send_native_result
     )
-    log.info(f"[E] sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
+    log.info(f"[E] Bridge.sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
 
     transfer_params = network.el_bridge.getTransferParams(
         send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
@@ -74,7 +74,7 @@ Additional optional arguments:
         transfer_params.transfer_index_in_block,
         wei_amount,
     )
-    log.info(f"[C] Withdraw result: {withdraw_result}")
+    log.info(f"[C] ChainContract.withdraw result: {withdraw_result}")
     log.info("Done")
 
 

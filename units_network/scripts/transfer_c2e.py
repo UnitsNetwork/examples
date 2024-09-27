@@ -48,7 +48,7 @@ Additional optional arguments:
     transfer_result = network.cl_chain_contract.transfer(
         cl_account, el_account.address, token, atomic_amount
     )
-    log.info(f"[C] Transfer result: {transfer_result}")
+    log.info(f"[C] ChainContract.transfer result: {transfer_result}")
     log.info("Done")
 
 

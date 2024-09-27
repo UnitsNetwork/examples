@@ -73,7 +73,7 @@ class Bridge(object):
             }
         )
         signed_tx = from_eth_account.sign_transaction(txn)  # type: ignore
-        self.log.debug(f"Signed sendNative transaction: {Web3.to_json(signed_tx)}")  # type: ignore
+        self.log.debug(f"Signed Bridge.sendNative transaction: {Web3.to_json(signed_tx)}")  # type: ignore
 
         return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
