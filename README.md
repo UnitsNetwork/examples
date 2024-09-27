@@ -12,7 +12,7 @@ Run any command without parameters to see the full list of options.
 ### Transfer from EL to CL (Waves)
 
 ```bash
-u0-transfer-e2c --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> 
+u0-transfer-e2c --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> | jq .
 ```
 
 #### Prepare chain_contract.withdraw transaction from EL transfer transaction hash

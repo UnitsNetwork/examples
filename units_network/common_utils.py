@@ -44,7 +44,7 @@ def configure_script_logger(name: str, to_file: Optional[str] = None) -> logging
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
 
-    handlers = [logging.StreamHandler(sys.stdout)]
+    handlers = [logging.StreamHandler(sys.stderr)]
     if to_file:
         handlers.append(logging.FileHandler(to_file, mode="a"))
 

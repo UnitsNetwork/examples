@@ -51,7 +51,7 @@ Additional optional arguments:
         transfer_params.transfer_index_in_block,
         txn_data["value"],
     )
-    log.info(f"[C] ChainContract.withdraw: {json.dumps(withdraw)}")
+    print(json.dumps(withdraw))
     log.info("Done")
 
 
