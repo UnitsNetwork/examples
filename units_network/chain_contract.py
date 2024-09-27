@@ -25,8 +25,14 @@ class ContractBlock(object):
 
 
 class ChainContract(ExtendedOracle):
-    def __init__(self, oracleAddress=None, seed=None, pywaves=pw):
-        super().__init__(oracleAddress, seed, pywaves)  # type: ignore
+    def __init__(self, oracleAddress=None, seed=None, nonce=0, pywaves=pw):
+        # super().__init__(oracleAddress, seed, pywaves)  # Doesn't propagate nonce
+        self.pw = pywaves
+        if seed is None:
+            self.oracleAddress = oracleAddress
+        else:
+            self.oracleAcc = self.pw.Address(seed=seed, nonce=nonce)
+            self.oracleAddress = self.oracleAcc.address
         self.log = logging.getLogger(self.__class__.__name__)
 
     def isContractSetup(self) -> bool:
