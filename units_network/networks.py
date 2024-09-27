@@ -57,13 +57,17 @@ def get_network_settings(chain_id_str: str) -> NetworkSettings:
 class Network:
     def __init__(self, settings: NetworkSettings):
         self.settings = settings
-        self.cl_chain_contract = ChainContract(
-            oracleAddress=settings.chain_contract_address
-        )
-        self.w3 = Web3(Web3.HTTPProvider(settings.el_node_api_url))
 
     @cached_property
-    def el_bridge(self):
+    def w3(self) -> Web3:
+        return Web3(Web3.HTTPProvider(self.settings.el_node_api_url))
+
+    @cached_property
+    def cl_chain_contract(self) -> ChainContract:
+        return ChainContract(oracleAddress=self.settings.chain_contract_address)
+
+    @cached_property
+    def el_bridge(self) -> Bridge:
         return Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
 
 
