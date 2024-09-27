@@ -107,7 +107,7 @@ class ChainContract(ExtendedOracle):
                 },
                 {
                     "type": "integer",
-                    "value": minerRewardInGwei,
+                    "value": int(minerRewardInGwei),
                 },
             ],
             txFee=txFee,
