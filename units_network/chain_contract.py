@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 from typing import List, Optional
 
 import pywaves as pw
@@ -50,7 +51,7 @@ class ChainContract(ExtendedOracle):
     def waitForFinalized(self, block: ContractBlock):
         last_finalized_block: List[Optional[ContractBlock]] = [None]
 
-        def is_finalized():
+        while True:
             curr_finalized_block = self.getFinalizedBlock()
             message = f"Waiting for {block.chain_height - curr_finalized_block.chain_height} blocks to finalize"
             if not (
@@ -60,22 +61,20 @@ class ChainContract(ExtendedOracle):
                 last_finalized_block[0] = curr_finalized_block
                 message = f"{curr_finalized_block} finalized"
             self.log.info(message)
-            return curr_finalized_block.chain_height >= block.chain_height
-
-        common_utils.repeat(is_finalized, 5000)
+            if curr_finalized_block.chain_height >= block.chain_height:
+                return
+            sleep(2)
 
     def waitForBlock(self, block_hash: str) -> ContractBlock:
         if block_hash.startswith("0x"):
             block_hash = block_hash[2:]
 
-        def get_block_data():
+        while True:
             try:
-                r = self.getBlockMeta(block_hash)
-                return r
+                return self.getBlockMeta(block_hash)
             except Exception:
-                return None
-
-        return common_utils.repeat(get_block_data, 2000)
+                pass
+            sleep(2)
 
     def getFinalizedBlock(self) -> ContractBlock:
         hash = self.getData("finalizedBlock")

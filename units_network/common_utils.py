@@ -1,18 +1,9 @@
+import base64
 import logging
 import sys
-import time
-import base64
 from typing import Optional
 
 from base58 import b58decode
-
-
-def repeat(func, interval_ms=3000.0):
-    while True:
-        result = func()
-        if result:
-            return result
-        time.sleep(interval_ms / 1000)
 
 
 def get_argument_value(arg_name):
