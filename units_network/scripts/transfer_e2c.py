@@ -68,7 +68,7 @@ Additional optional arguments:
             withdraw_block_meta = network.require_settled_block(
                 transfer_params.block_with_transfer_hash
             )
-            log.info(f"[C] Withdraw block meta: {withdraw_block_meta}")
+            log.info(f"[C] Found block on chain contract: {withdraw_block_meta}")
 
             network.require_finalized_block(withdraw_block_meta)
             break

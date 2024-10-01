@@ -125,13 +125,17 @@ class Bridge(object):
                     for w in withdrawals:
                         withdrawal_address = w["address"].lower()
                         withdrawal_amount = Web3.to_wei(w["amount"], "gwei")
-                        for el_account, wei_amount in expected_withdrawals:
+                        for i, (el_account, wei_amount) in enumerate(
+                            expected_withdrawals
+                        ):
                             if (
                                 withdrawal_address == el_account.address.lower()
                                 and withdrawal_amount == wei_amount
                             ):
                                 self.log.info(f"Found an expected withdrawal: {w}")
                                 missing -= 1
+                                del expected_withdrawals[i]
+                                break
 
                     if missing <= 0:
                         self.log.info("Found all withdrawals")
