@@ -2,11 +2,15 @@ import logging
 import os
 from functools import cached_property
 
+import web3.exceptions
+
+import units_network.exceptions
+from hexbytes import HexBytes
 from pywaves import pw
 from web3 import Web3
 
 from units_network.bridge import Bridge
-from units_network.chain_contract import ChainContract
+from units_network.chain_contract import ChainContract, ContractBlock
 
 
 class NetworkSettings:
@@ -69,6 +73,32 @@ class Network:
     @cached_property
     def el_bridge(self) -> Bridge:
         return Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
+
+    def require_settled_block(self, block_hash: HexBytes) -> ContractBlock:
+        block_hash_hex = block_hash.hex()
+        while True:
+            try:
+                return self.cl_chain_contract.waitForBlock(block_hash_hex)
+            except units_network.exceptions.TimeExhausted:
+                pass
+
+            self.check_block_presence(block_hash)
+
+    def require_finalized_block(self, block: ContractBlock):
+        while True:
+            try:
+                self.cl_chain_contract.waitForFinalized(block)
+                return
+            except units_network.exceptions.TimeExhausted:
+                pass
+
+            self.check_block_presence(block.hash)
+
+    def check_block_presence(self, block_hash: HexBytes):
+        try:
+            self.w3.eth.get_block(block_hash)
+        except web3.exceptions.BlockNotFound:
+            raise units_network.exceptions.BlockDisappeared(block_hash.hex())
 
 
 def select(chain_id_str: str):
