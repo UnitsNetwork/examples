@@ -39,7 +39,7 @@ Additional optional arguments:
 
     log.info(f"[E] Bridge.sendNative transaction data: {Web3.to_json(txn_data)}")  # type: ignore
 
-    transfer_params = network.el_bridge.getTransferParams(
+    transfer_params = network.el_bridge.get_transfer_params(
         txn_data["blockHash"], txn_hash
     )
     log.info(f"[C] Transfer params: {transfer_params}")

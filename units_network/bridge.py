@@ -43,7 +43,7 @@ class Bridge(object):
             event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
         )
 
-    def sendNative(
+    def send_native(
         self,
         from_eth_account: BaseAccount,
         to_waves_pk_hash: bytes,
@@ -77,7 +77,7 @@ class Bridge(object):
 
         return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
-    def getTransferParams(
+    def get_transfer_params(
         self, block_hash: HexBytes, transfer_txn_hash: HexBytes
     ) -> E2CTransferParams:
         block_hash_hex = block_hash.hex()
@@ -106,7 +106,7 @@ class Bridge(object):
             transfer_index_in_block=transfer_index_in_block,
         )
 
-    def waitForWithdrawals(
+    def wait_for_withdrawals(
         self,
         from_height: BlockNumber,
         expected_withdrawals: List[Tuple[BaseAccount, Wei]],

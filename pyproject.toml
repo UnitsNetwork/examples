@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "units-network"
-version = "0.1.0+009"
+version = "0.1.1+001"
 description = "Scripts and classes to interact with Unit0"
 dependencies = ["pywaves~=1.0", "web3~=7.2", "pymerkle~=6.1"]
 readme = "README.md"

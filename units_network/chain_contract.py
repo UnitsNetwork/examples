@@ -9,6 +9,7 @@ from pywaves.txGenerator import TxGenerator
 from web3 import Web3
 from web3.types import Wei
 
+import units_network.exceptions
 from units_network import common_utils
 from units_network.extended_address import ExtendedAddress
 from units_network.extended_oracle import ExtendedOracle
@@ -48,42 +49,68 @@ class ChainContract(ExtendedOracle):
     def getElBridgeAddress(self) -> str:
         return self.getData("elBridgeAddress")
 
-    def waitForFinalized(self, block: ContractBlock):
+    def waitForFinalized(
+        self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
+    ):
         last_finalized_block: List[Optional[ContractBlock]] = [None]
 
+        rest_timeout = timeout
         while True:
             curr_finalized_block = self.getFinalizedBlock()
-            message = f"Waiting for {block.chain_height - curr_finalized_block.chain_height} blocks to finalize"
+            message = f"Wait for {block.chain_height - curr_finalized_block.chain_height} blocks to finalize"
             if not (
                 last_finalized_block[0]
                 and last_finalized_block[0].hash == curr_finalized_block.hash
             ):
                 last_finalized_block[0] = curr_finalized_block
-                message = f"{curr_finalized_block} finalized"
+                message = f"Current finalized block is {curr_finalized_block}"
             self.log.info(message)
             if curr_finalized_block.chain_height >= block.chain_height:
                 return
-            sleep(2)
 
-    def waitForBlock(self, block_hash: str) -> ContractBlock:
-        if block_hash.startswith("0x"):
-            block_hash = block_hash[2:]
+            rest_timeout -= poll_latency
+            if rest_timeout <= 0:
+                break
 
+            sleep(poll_latency)
+        raise units_network.exceptions.TimeExhausted(
+            f"Block {block.hash} not finalized on contract in {timeout} seconds"
+        )
+
+    def waitForBlock(
+        self, block_hash: str, timeout: float = 30, poll_latency: float = 2
+    ) -> ContractBlock:
+        self.log.info(f"Wait for {block_hash} on chain contract")
+        rest_timeout = timeout
         while True:
             try:
                 return self.getBlockMeta(block_hash)
-            except Exception:
+            except units_network.exceptions.BlockNotFound:
                 pass
-            sleep(2)
+
+            rest_timeout -= poll_latency
+            if rest_timeout <= 0:
+                break
+
+            sleep(poll_latency)
+        raise units_network.exceptions.TimeExhausted(
+            f"Block {block_hash} not found on contract in {timeout} seconds"
+        )
 
     def getFinalizedBlock(self) -> ContractBlock:
         hash = self.getData("finalizedBlock")
         return self.getBlockMeta(hash)
 
     def getBlockMeta(self, hash: str) -> ContractBlock:
+        if hash.startswith("0x"):
+            hash = hash[2:]
+
         r = self.evaluate(f'blockMeta("{hash}")')
-        meta = r["result"]["value"]
-        return ContractBlock(hash, meta)
+        try:
+            meta = r["result"]["value"]
+            return ContractBlock(hash, meta)
+        except Exception:
+            raise units_network.exceptions.BlockNotFound(hash)
 
     def setScript(self, script: str, txFee: int = 3_200_000):
         return self.oracleAcc.setScript(script, txFee)

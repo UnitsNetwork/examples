@@ -4,9 +4,10 @@ import sys
 from decimal import Decimal
 
 import pywaves as pw
-from units_network import common_utils, networks, units
 from web3 import Web3
 from web3.types import TxReceipt
+
+from units_network import common_utils, exceptions, networks, units
 
 
 def main():
@@ -45,28 +46,35 @@ Additional optional arguments:
     )
 
     log.info("[E] Call Bridge.sendNative")
-    send_native_result = network.el_bridge.sendNative(
+    send_native_txn_hash = network.el_bridge.send_native(
         from_eth_account=el_account,
         to_waves_pk_hash=common_utils.waves_public_key_hash_bytes(cl_account.address),
         amount=wei_amount,
     )
+    log.info(f"[E] Bridge.sendNative transaction hash: {send_native_txn_hash.hex()}")
 
-    send_native_receipt: TxReceipt = network.w3.eth.wait_for_transaction_receipt(
-        send_native_result
-    )
-    log.info(f"[E] Bridge.sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
+    while True:
+        send_native_receipt: TxReceipt = network.w3.eth.wait_for_transaction_receipt(
+            send_native_txn_hash,
+        )
+        log.info(f"[E] Bridge.sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
 
-    transfer_params = network.el_bridge.getTransferParams(
-        send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
-    )
-    log.info(f"[C] Transfer params: {transfer_params}")
+        transfer_params = network.el_bridge.get_transfer_params(
+            send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
+        )
+        log.info(f"[C] Transfer params: {transfer_params}")
 
-    # Wait for a block confirmation on Consensus layer
-    withdraw_block_meta = network.cl_chain_contract.waitForBlock(
-        transfer_params.block_with_transfer_hash.hex()
-    )
-    log.info(f"[C] Withdraw block meta: {withdraw_block_meta}, wait for finalization")
-    network.cl_chain_contract.waitForFinalized(withdraw_block_meta)
+        try:
+            withdraw_block_meta = network.require_settled_block(
+                transfer_params.block_with_transfer_hash
+            )
+            log.info(f"[C] Withdraw block meta: {withdraw_block_meta}")
+
+            network.require_finalized_block(withdraw_block_meta)
+            break
+        except exceptions.BlockDisappeared as e:
+            log.warning(f"{e}. Rollback? Retry getting a receipt")
+            continue
 
     withdraw_result = network.cl_chain_contract.withdraw(
         cl_account,
