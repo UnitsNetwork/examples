@@ -157,6 +157,25 @@ class ChainContract(ExtendedOracle):
             txFee=txFee,
         )
 
+    def join_v2(
+        self,
+        miner: pw.Address,
+        elRewardAddress: HexStr,
+        txFee: int = 500_000,
+    ):
+        # Reward address in string
+        return miner.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="join",
+            params=[
+                {
+                    "type": "string",
+                    "value": elRewardAddress,
+                },
+            ],
+            txFee=txFee,
+        )
+
     def transfer(
         self,
         from_waves_account: pw.Address,
