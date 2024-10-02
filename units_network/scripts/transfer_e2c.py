@@ -66,7 +66,8 @@ Additional optional arguments:
 
         try:
             withdraw_block_meta = network.require_settled_block(
-                transfer_params.block_with_transfer_hash
+                transfer_params.block_with_transfer_hash,
+                send_native_receipt["blockNumber"],
             )
             log.info(f"[C] Found block on chain contract: {withdraw_block_meta}")
 

@@ -74,7 +74,9 @@ class Network:
     def el_bridge(self) -> Bridge:
         return Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
 
-    def require_settled_block(self, block_hash: HexBytes) -> ContractBlock:
+    def require_settled_block(
+        self, block_hash: HexBytes, block_number: int
+    ) -> ContractBlock:
         block_hash_hex = block_hash.hex()
         while True:
             try:
@@ -82,7 +84,7 @@ class Network:
             except units_network.exceptions.TimeExhausted:
                 pass
 
-            self.check_block_presence(block_hash)
+            self.check_block_presence(block_hash, block_number)
 
     def require_finalized_block(self, block: ContractBlock):
         while True:
@@ -92,11 +94,18 @@ class Network:
             except units_network.exceptions.TimeExhausted:
                 pass
 
-            self.check_block_presence(block.hash)
+            self.check_block_presence(block.hash, block.chain_height)
 
-    def check_block_presence(self, block_hash: HexBytes):
+    def check_block_presence(self, block_hash: HexBytes, block_number: int):
         try:
-            self.w3.eth.get_block(block_hash)
+            expected_block = self.w3.eth.get_block(block_hash)
+            assert "hash" in expected_block
+
+            actual_block = self.w3.eth.get_block(block_number)
+            assert "hash" in actual_block
+
+            if actual_block["hash"] != expected_block["hash"]:
+                raise units_network.exceptions.BlockDisappeared(block_hash.hex())
         except web3.exceptions.BlockNotFound:
             raise units_network.exceptions.BlockDisappeared(block_hash.hex())
 
