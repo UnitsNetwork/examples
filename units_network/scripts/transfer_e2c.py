@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import os
 import sys
 from decimal import Decimal
 
@@ -11,7 +10,7 @@ from units_network import common_utils, exceptions, networks, units
 
 
 def main():
-    log = common_utils.configure_script_logger(os.path.basename(__file__))
+    log = common_utils.configure_cli_logger(__file__)
 
     cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
     el_account_private_key = common_utils.get_argument_value("--eth-private-key")

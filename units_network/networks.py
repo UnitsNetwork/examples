@@ -3,12 +3,11 @@ import os
 from functools import cached_property
 
 import web3.exceptions
-
-import units_network.exceptions
 from hexbytes import HexBytes
 from pywaves import pw
 from web3 import Web3
 
+import units_network.exceptions
 from units_network.bridge import Bridge
 from units_network.chain_contract import ChainContract, ContractBlock
 

@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 import json
-import os
 import sys
 
 import pywaves as pw
 from hexbytes import HexBytes
-from units_network import common_utils, networks
 from web3 import Web3
 from web3.types import TxData
 
+from units_network import common_utils, networks
+
 
 def main():
-    log = common_utils.configure_script_logger(os.path.basename(__file__))
+    log = common_utils.configure_cli_logger(__file__)
 
     raw_txn_hash = common_utils.get_argument_value("--txn-hash") or ""
     cl_account_private_key = common_utils.get_argument_value("--waves-private-key")

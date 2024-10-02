@@ -1,7 +1,8 @@
 import base64
 import logging
+import logging.config
+import os
 import sys
-from typing import Optional
 
 from base58 import b58decode
 
@@ -30,19 +31,11 @@ def clean_hex_prefix(hex: str) -> str:
     return hex[2:] if hex.startswith("0x") else hex
 
 
-def configure_script_logger(name: str, to_file: Optional[str] = None) -> logging.Logger:
-    # Remove a handler from PyWaves
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-
-    handlers = [logging.StreamHandler(sys.stderr)]
-    if to_file:
-        handlers.append(logging.FileHandler(to_file, mode="a"))
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="[%(asctime)s] %(levelname)s - %(name)s - %(message)s",
-        handlers=handlers,
+def configure_cli_logger(
+    file: str,
+) -> logging.Logger:
+    logging_config_path = os.getenv(
+        "LOGGING_CONFIG", os.path.join(os.path.dirname(file), "logging.conf")
     )
-
-    return logging.getLogger(name)
+    logging.config.fileConfig(logging_config_path)
+    return logging.getLogger(os.path.basename(file))

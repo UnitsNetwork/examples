@@ -119,7 +119,7 @@ class Bridge(object):
 
                 if curr_block:
                     withdrawals = curr_block.get("withdrawals", [])
-                    self.log.info(
+                    self.log.debug(
                         f"Found block #{curr_block['number']}: 0x{curr_block['hash'].hex()} with withdrawals: {Web3.to_json(withdrawals)}"  # type: ignore
                     )
                     for w in withdrawals:
@@ -138,7 +138,7 @@ class Bridge(object):
                                 break
 
                     if missing <= 0:
-                        self.log.info("Found all withdrawals")
+                        self.log.debug("Found all withdrawals")
                         break
 
                     from_height = BlockNumber(from_height + 1)

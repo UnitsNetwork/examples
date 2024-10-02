@@ -64,7 +64,7 @@ class ChainContract(ExtendedOracle):
             ):
                 last_finalized_block[0] = curr_finalized_block
                 message = f"Current finalized block is {curr_finalized_block}"
-            self.log.info(message)
+            self.log.debug(message)
             if curr_finalized_block.chain_height >= block.chain_height:
                 return
 
@@ -80,7 +80,7 @@ class ChainContract(ExtendedOracle):
     def waitForBlock(
         self, block_hash: str, timeout: float = 30, poll_latency: float = 2
     ) -> ContractBlock:
-        self.log.info(f"Wait for {block_hash} on chain contract")
+        self.log.debug(f"Wait for {block_hash} on chain contract")
         rest_timeout = timeout
         while True:
             try:

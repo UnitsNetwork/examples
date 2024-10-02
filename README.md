@@ -27,3 +27,7 @@ u0-transfer-e2c-withdraw.py --txn-hash <Ethereum transaction hash in HEX> --wave
 u0-transfer-c2e.py --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 ```
 
+### Logging
+
+You can configure logging with a custom [logging.conf](./units_network/scripts/logging.conf) ([docs](https://docs.python.org/3/library/logging.config.html#logging-config-fileformat)). Then you need to specify a
+path to this file in the `LOGGING_CONFIG` environment variable.
