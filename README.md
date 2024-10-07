@@ -18,13 +18,13 @@ u0-transfer-e2c --eth-private-key <Ethereum private key in HEX with 0x> --waves-
 #### Prepare chain_contract.withdraw transaction from EL transfer transaction hash
 
 ```bash
-u0-transfer-e2c-withdraw.py --txn-hash <Ethereum transaction hash in HEX> --waves-private-key <Waves private key in base58> 
+u0-transfer-e2c-withdraw --txn-hash <Ethereum transaction hash in HEX> --waves-private-key <Waves private key in base58> 
 ```
 
 ### Transfer from CL (Waves) to EL
 
 ```bash
-u0-transfer-c2e.py --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
+u0-transfer-c2e --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 ```
 
 ### Logging

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=75.0", "wheel"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ version = "0.1.4+001"
 description = "Scripts and classes to interact with Unit0"
 dependencies = ["pywaves~=1.0", "web3~=7.2", "pymerkle~=6.1"]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 authors = [{ name = "Vyatcheslav Suharnikov", email = "arz.freezy@gmail.com" }]
 license = { text = "MIT License" }
 keywords = ["units network", "blockchain", "waves"]
