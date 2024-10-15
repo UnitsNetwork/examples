@@ -1,13 +1,15 @@
 from decimal import Decimal
 from web3 import Web3
 from web3.types import Wei
+from typing import Union
+import decimal
 
 
 def raw_to_wei(raw_amount: Decimal) -> Wei:
     return Web3.to_wei(raw_amount, "ether")
 
 
-def wei_to_raw(amount: Wei) -> int | Decimal:
+def wei_to_raw(amount: Wei) -> Union[int, decimal.Decimal]:
     return Web3.from_wei(amount, "ether")
 
 

@@ -112,14 +112,16 @@ class ChainContract(ExtendedOracle):
         except Exception:
             raise units_network.exceptions.BlockNotFound(hash)
 
-    def setScript(self, script: str, txFee: int = 3_200_000):
+    def setScript(self, script: str, txFee: int = 3_500_000):
         return self.oracleAcc.setScript(script, txFee)
 
     def setup(
         self,
         elGenesisBlockHash: HexStr,
-        minerRewardInTokens: float = 2.0,
+        minerRewardInTokens: float = 1.8,
         txFee: int = 100_500_000,
+        daoAddress: str = '',
+        daoRewardInTokens: float = 0.2
     ):
         minerRewardInWei = int(minerRewardInTokens * 10**18)
         minerRewardInGwei = Web3.from_wei(minerRewardInWei, "gwei")
@@ -135,6 +137,14 @@ class ChainContract(ExtendedOracle):
                     "type": "integer",
                     "value": int(minerRewardInGwei),
                 },
+                {
+                    "type": "string",
+                    "value": daoAddress
+                },
+                {
+                    "type": "integer",
+                    "value": int(daoRewardInTokens * 10**8)
+                }
             ],
             txFee=txFee,
         )
