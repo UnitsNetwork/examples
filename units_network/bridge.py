@@ -58,6 +58,7 @@ class Bridge(object):
             else nonce
         )
         txn: TxParams = {
+            "chainId": self.w3.eth.chain_id,
             "from": from_eth_account.address,
             "nonce": nonce,
             "gasPrice": gas_price,
