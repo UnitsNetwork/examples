@@ -39,8 +39,8 @@ class Bridge(object):
             abi=el_bridge_abi,
         )
 
-        self.topic = HexStr(
-            event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
+        self.topic = (
+            "0x" + event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
         )
 
     def send_native(
