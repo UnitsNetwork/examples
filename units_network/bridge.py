@@ -39,8 +39,8 @@ class Bridge(object):
             abi=el_bridge_abi,
         )
 
-        self.topic = HexStr(
-            event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
+        self.topic = (
+            "0x" + event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
         )
 
     def send_native(
@@ -58,6 +58,7 @@ class Bridge(object):
             else nonce
         )
         txn: TxParams = {
+            "chainId": self.w3.eth.chain_id,
             "from": from_eth_account.address,
             "nonce": nonce,
             "gasPrice": gas_price,
