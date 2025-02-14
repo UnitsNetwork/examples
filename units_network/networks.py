@@ -46,6 +46,14 @@ test_net = NetworkSettings(
     chain_contract_address="3Msx4Aq69zWUKy4d1wyKnQ4ofzEDAfv5Ngf",
 )
 
+test_net = NetworkSettings(
+    name="MainNet",
+    chain_id_str="W",
+    cl_node_api_url="https://nodes.wavesnodes.com",
+    el_node_api_url="https://rpc.unit0.dev",
+    chain_contract_address="3PKgN8rfmvF7hK7RWJbpvkh59e1pQkUzero",
+)
+
 networks = {n.chain_id_str: n for n in [stage_net, test_net]}
 
 

@@ -23,7 +23,7 @@ def main():
 Required arguments:
   transfer-e2c-withdraw.py --txn-hash <Ethereum transaction hash in HEX> --waves-private-key <Waves private key in base58> 
 Additional optional arguments:
-  --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. Not supported for now: W - MainNet""",
+  --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. W - MainNet""",
             file=sys.stderr,
         )
         exit(1)

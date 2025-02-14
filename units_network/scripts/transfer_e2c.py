@@ -28,7 +28,7 @@ def main():
 Required arguments:
   transfer-e2c.py --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> 
 Additional optional arguments:
-  --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. Not supported for now: W - MainNet
+  --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. W - MainNet
   --amount N (default: 0.01): amount of transferred Unit0 tokens""",
             file=sys.stderr,
         )
