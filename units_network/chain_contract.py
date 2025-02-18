@@ -49,6 +49,9 @@ class ChainContract(ExtendedOracle):
     def getElBridgeAddress(self) -> str:
         return self.getData("elBridgeAddress")
 
+    def getElStandardBridgeAddress(self) -> str:
+        return self.getData("elStandardBridgeAddress")
+
     def waitForFinalized(
         self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
     ):
@@ -120,8 +123,8 @@ class ChainContract(ExtendedOracle):
         elGenesisBlockHash: HexStr,
         minerRewardInTokens: float = 1.8,
         txFee: int = 100_500_000,
-        daoAddress: str = '',
-        daoRewardInTokens: float = 0.2
+        daoAddress: str = "",
+        daoRewardInTokens: float = 0.2,
     ):
         minerRewardInWei = int(minerRewardInTokens * 10**18)
         minerRewardInGwei = Web3.from_wei(minerRewardInWei, "gwei")
@@ -137,14 +140,8 @@ class ChainContract(ExtendedOracle):
                     "type": "integer",
                     "value": int(minerRewardInGwei),
                 },
-                {
-                    "type": "string",
-                    "value": daoAddress
-                },
-                {
-                    "type": "integer",
-                    "value": int(daoRewardInTokens * 10**8)
-                }
+                {"type": "string", "value": daoAddress},
+                {"type": "integer", "value": int(daoRewardInTokens * 10**8)},
             ],
             txFee=txFee,
         )
@@ -186,41 +183,96 @@ class ChainContract(ExtendedOracle):
             txFee=txFee,
         )
 
-    def transfer(
+    def registerAsset(
         self,
-        from_waves_account: pw.Address,
-        to_eth_address: HexAddress,
-        token: pw.Asset,
-        atomic_amount: int,
+        asset: pw.Asset,
+        erc20Address: HexStr,
+        elDecimals: int,
         txFee: int = 500_000,
     ):
-        return from_waves_account.invokeScript(
+        return self.oracleAcc.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="registerAsset",
+            params=[
+                {
+                    "type": "string",
+                    "value": asset.assetId,
+                },
+                {
+                    "type": "string",
+                    "value": common_utils.clean_hex_prefix(erc20Address).lower(),
+                },
+                {"type": "integer", "value": elDecimals},
+            ],
+            txFee=txFee,
+        )
+
+    def createAndRegisterAsset(
+        self,
+        erc20Address: HexStr,
+        elDecimals: int,
+        name: str,
+        description: str,
+        clDecimals: int,
+        txFee: int = 500_000,
+    ):
+        return self.oracleAcc.invokeScript(
+            dappAddress=self.oracleAddress,
+            functionName="createAndRegisterAsset",
+            params=[
+                {
+                    "type": "string",
+                    "value": common_utils.clean_hex_prefix(erc20Address).lower(),
+                },
+                {"type": "integer", "value": elDecimals},
+                {
+                    "type": "string",
+                    "value": name,
+                },
+                {
+                    "type": "string",
+                    "value": description,
+                },
+                {"type": "integer", "value": clDecimals},
+            ],
+            txFee=txFee,
+        )
+
+    def transfer(
+        self,
+        fromWavesAccount: pw.Address,
+        toEthAddress: HexAddress,
+        token: pw.Asset,
+        atomicAmount: int,
+        txFee: int = 500_000,
+    ):
+        return fromWavesAccount.invokeScript(
             dappAddress=self.oracleAddress,
             functionName="transfer",
             params=[
                 {
                     "type": "string",
-                    "value": common_utils.clean_hex_prefix(to_eth_address).lower(),
+                    "value": common_utils.clean_hex_prefix(toEthAddress).lower(),
                 }
             ],
-            payments=[{"amount": atomic_amount, "assetId": token.assetId}],
+            payments=[{"amount": atomicAmount, "assetId": token.assetId}],
             txFee=txFee,
         )
 
     def withdraw(
         self,
         sender: pw.Address,
-        block_hash_with_transfer: str,
-        merkle_proofs: List[str],
-        transfer_index_in_block: int,
+        blockHashWithTransfer: str,
+        merkleProofs: List[str],
+        transferIndexInBlock: int,
         amount: Wei,
         txFee: int = 500_000,
     ):
         txn = self.prepareWithdraw(
             sender,
-            block_hash_with_transfer,
-            merkle_proofs,
-            transfer_index_in_block,
+            blockHashWithTransfer,
+            merkleProofs,
+            transferIndexInBlock,
             amount,
             txFee,
         )
@@ -229,9 +281,9 @@ class ChainContract(ExtendedOracle):
     def prepareWithdraw(
         self,
         sender: pw.Address,
-        block_hash_with_transfer: str,
-        merkle_proofs: List[str],
-        transfer_index_in_block: int,
+        blockHashWithTransfer: str,
+        merkleProofs: List[str],
+        transferIndexInBlock: int,
         amount: Wei,
         txFee: int = 500_000,
     ):
@@ -240,19 +292,74 @@ class ChainContract(ExtendedOracle):
 
         proofs = [
             {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
-            for p in merkle_proofs
+            for p in merkleProofs
         ]
         withdraw_amount = amount // (10**10)
         params = [
-            {"type": "string", "value": block_hash_with_transfer},
+            {"type": "string", "value": blockHashWithTransfer},
             {"type": "list", "value": proofs},
-            {"type": "integer", "value": transfer_index_in_block},
+            {"type": "integer", "value": transferIndexInBlock},
             {"type": "integer", "value": withdraw_amount},
         ]
         txn = generator.generateInvokeScript(
             publicKey=sender.publicKey,
             dappAddress=self.oracleAddress,
             functionName="withdraw",
+            params=params,
+            txFee=txFee,
+        )
+        signer.signTx(txn, privateKey=sender.privateKey)
+        return txn
+
+    def withdrawAsset(
+        self,
+        sender: pw.Address,
+        blockHashWithTransfer: str,
+        merkleProofs: List[str],
+        transferIndexInBlock: int,
+        atomicAmount: int,
+        asset: pw.Asset,
+        txFee: int = 500_000,
+    ):
+        txn = self.prepareWithdrawAsset(
+            sender,
+            blockHashWithTransfer,
+            merkleProofs,
+            transferIndexInBlock,
+            atomicAmount,
+            asset,
+            txFee,
+        )
+        return sender.broadcastTx(txn)
+
+    def prepareWithdrawAsset(
+        self,
+        sender: pw.Address,
+        blockHashWithTransfer: str,
+        merkleProofs: List[str],
+        transferIndexInBlock: int,
+        atomicAmount: int,
+        asset: pw.Asset,
+        txFee: int = 500_000,
+    ):
+        generator = TxGenerator(self.pw)  # type: ignore
+        signer = TxSigner(self.pw)  # type: ignore
+
+        proofs = [
+            {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
+            for p in merkleProofs
+        ]
+        params = [
+            {"type": "string", "value": blockHashWithTransfer},
+            {"type": "list", "value": proofs},
+            {"type": "integer", "value": transferIndexInBlock},
+            {"type": "integer", "value": atomicAmount},
+            {"type": "string", "value": asset.assetId},
+        ]
+        txn = generator.generateInvokeScript(
+            publicKey=sender.publicKey,
+            dappAddress=self.oracleAddress,
+            functionName="withdrawAsset",
             params=params,
             txFee=txFee,
         )
