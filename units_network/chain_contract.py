@@ -190,39 +190,59 @@ class ChainContract(ExtendedOracle):
         elDecimals: int,
         txFee: int = 500_000,
     ):
+        return self.registerAssets([asset], [erc20Address], [elDecimals], txFee=txFee)
+
+    def registerAssets(
+        self,
+        assets: List[pw.Asset],
+        erc20Addresses: List[HexStr],
+        elDecimals: List[int],
+        txFee: int = 500_000,
+    ):
         return self.oracleAcc.invokeScript(
             dappAddress=self.oracleAddress,
-            functionName="registerAsset",
+            functionName="registerAssets",
             params=[
                 {
-                    "type": "string",
-                    "value": asset.assetId,
+                    "type": "list",
+                    "value": [
+                        {"type": "string", "value": asset.assetId} for asset in assets
+                    ],
                 },
                 {
-                    "type": "string",
-                    "value": common_utils.clean_hex_prefix(erc20Address).lower(),
+                    "type": "list",
+                    "value": [
+                        {
+                            "type": "string",
+                            "value": common_utils.clean_hex_prefix(erc20Address),
+                        }
+                        for erc20Address in erc20Addresses
+                    ],
                 },
-                {"type": "integer", "value": elDecimals},
+                {
+                    "type": "list",
+                    "value": [{"type": "integer", "value": x} for x in elDecimals],
+                },
             ],
             txFee=txFee,
         )
 
-    def createAndRegisterAsset(
+    def issueAndRegister(
         self,
         erc20Address: HexStr,
         elDecimals: int,
         name: str,
         description: str,
         clDecimals: int,
-        txFee: int = 500_000,
+        txFee: int = 100_500_000,
     ):
         return self.oracleAcc.invokeScript(
             dappAddress=self.oracleAddress,
-            functionName="createAndRegisterAsset",
+            functionName="issueAndRegister",
             params=[
                 {
                     "type": "string",
-                    "value": common_utils.clean_hex_prefix(erc20Address).lower(),
+                    "value": common_utils.clean_hex_prefix(erc20Address),
                 },
                 {"type": "integer", "value": elDecimals},
                 {
@@ -252,7 +272,7 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": common_utils.clean_hex_prefix(toEthAddress).lower(),
+                    "value": common_utils.clean_hex_prefix(toEthAddress),
                 }
             ],
             payments=[{"amount": atomicAmount, "assetId": token.assetId}],
