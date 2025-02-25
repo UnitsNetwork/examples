@@ -3,6 +3,7 @@ import logging
 import logging.config
 import os
 import sys
+from typing import Optional
 
 from base58 import b58decode
 
@@ -32,10 +33,12 @@ def clean_hex_prefix(hex: str) -> str:
 
 
 def configure_cli_logger(
-    file: str,
+    file: str, config_path: Optional[str] = None
 ) -> logging.Logger:
-    logging_config_path = os.getenv(
-        "LOGGING_CONFIG", os.path.join(os.path.dirname(file), "logging.conf")
-    )
-    logging.config.fileConfig(logging_config_path)
+    if config_path is None:
+        config_path = os.getenv(
+            "LOGGING_CONFIG", os.path.join(os.getcwd(), "logging.conf")
+        )
+
+    logging.config.fileConfig(config_path)
     return logging.getLogger(os.path.basename(file))
