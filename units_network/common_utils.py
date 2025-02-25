@@ -40,5 +40,6 @@ def configure_cli_logger(
             "LOGGING_CONFIG", os.path.join(os.getcwd(), "logging.conf")
         )
 
-    logging.config.fileConfig(config_path)
+    log_dir = os.getenv("LOGGING_DIR", os.getcwd())
+    logging.config.fileConfig(config_path, defaults={"LOGGING_DIR": log_dir})
     return logging.getLogger(os.path.basename(file))
