@@ -115,16 +115,16 @@ class ChainContract(ExtendedOracle):
         except Exception:
             raise units_network.exceptions.BlockNotFound(hash)
 
-    def setScript(self, script: str, txFee: int = 3_500_000):
+    def setScript(self, script: str, txFee: int = 5_000_000):
         return self.oracleAcc.setScript(script, txFee)
 
     def setup(
         self,
         elGenesisBlockHash: HexStr,
         minerRewardInTokens: float = 1.8,
-        txFee: int = 100_500_000,
         daoAddress: str = "",
         daoRewardInTokens: float = 0.2,
+        txFee: int = 100_500_000,
     ):
         minerRewardInWei = int(minerRewardInTokens * 10**18)
         minerRewardInGwei = Web3.from_wei(minerRewardInWei, "gwei")
@@ -157,25 +157,6 @@ class ChainContract(ExtendedOracle):
             functionName="join",
             params=[
                 {
-                    "type": "binary",
-                    "value": f"base64:{common_utils.hex_to_base64(common_utils.clean_hex_prefix(elRewardAddress))}",
-                },
-            ],
-            txFee=txFee,
-        )
-
-    def join_v2(
-        self,
-        miner: pw.Address,
-        elRewardAddress: HexStr,
-        txFee: int = 500_000,
-    ):
-        # Reward address in string
-        return miner.invokeScript(
-            dappAddress=self.oracleAddress,
-            functionName="join",
-            params=[
-                {
                     "type": "string",
                     "value": elRewardAddress,
                 },
@@ -185,50 +166,74 @@ class ChainContract(ExtendedOracle):
 
     def registerAsset(
         self,
+        sender: pw.Address,
         asset: pw.Asset,
         erc20Address: HexStr,
         elDecimals: int,
         txFee: int = 500_000,
     ):
-        return self.registerAssets([asset], [erc20Address], [elDecimals], txFee=txFee)
+        return self.registerAssets(
+            sender, [asset], [erc20Address], [elDecimals], txFee=txFee
+        )
 
     def registerAssets(
         self,
+        sender: pw.Address,
         assets: List[pw.Asset],
         erc20Addresses: List[HexStr],
         elDecimals: List[int],
         txFee: int = 500_000,
     ):
-        return self.oracleAcc.invokeScript(
+        txn = self.prepareRegisterAssets(
+            sender, assets, erc20Addresses, elDecimals, txFee
+        )
+        return sender.broadcastTx(txn)
+
+    def prepareRegisterAssets(
+        self,
+        sender: pw.Address,
+        assets: List[pw.Asset],
+        erc20Addresses: List[HexStr],
+        elDecimals: List[int],
+        txFee: int = 500_000,
+    ):
+        generator = TxGenerator(self.pw)  # type: ignore
+        signer = TxSigner(self.pw)  # type: ignore
+        params = [
+            {
+                "type": "list",
+                "value": [
+                    {"type": "string", "value": asset.assetId} for asset in assets
+                ],
+            },
+            {
+                "type": "list",
+                "value": [
+                    {
+                        "type": "string",
+                        "value": common_utils.clean_hex_prefix(erc20Address),
+                    }
+                    for erc20Address in erc20Addresses
+                ],
+            },
+            {
+                "type": "list",
+                "value": [{"type": "integer", "value": x} for x in elDecimals],
+            },
+        ]
+        txn = generator.generateInvokeScript(
+            publicKey=sender.publicKey,
             dappAddress=self.oracleAddress,
             functionName="registerAssets",
-            params=[
-                {
-                    "type": "list",
-                    "value": [
-                        {"type": "string", "value": asset.assetId} for asset in assets
-                    ],
-                },
-                {
-                    "type": "list",
-                    "value": [
-                        {
-                            "type": "string",
-                            "value": common_utils.clean_hex_prefix(erc20Address),
-                        }
-                        for erc20Address in erc20Addresses
-                    ],
-                },
-                {
-                    "type": "list",
-                    "value": [{"type": "integer", "value": x} for x in elDecimals],
-                },
-            ],
+            params=params,
             txFee=txFee,
         )
+        signer.signTx(txn, privateKey=sender.privateKey)
+        return txn
 
     def issueAndRegister(
         self,
+        sender: pw.Address,
         erc20Address: HexStr,
         elDecimals: int,
         name: str,
@@ -236,27 +241,48 @@ class ChainContract(ExtendedOracle):
         clDecimals: int,
         txFee: int = 100_500_000,
     ):
-        return self.oracleAcc.invokeScript(
+        txn = self.prepareIssueAndRegister(
+            sender, erc20Address, elDecimals, name, description, clDecimals, txFee
+        )
+        return sender.broadcastTx(txn)
+
+    def prepareIssueAndRegister(
+        self,
+        sender: pw.Address,
+        erc20Address: HexStr,
+        elDecimals: int,
+        name: str,
+        description: str,
+        clDecimals: int,
+        txFee: int = 100_500_000,
+    ):
+        generator = TxGenerator(self.pw)  # type: ignore
+        signer = TxSigner(self.pw)  # type: ignore
+        params = [
+            {
+                "type": "string",
+                "value": common_utils.clean_hex_prefix(erc20Address),
+            },
+            {"type": "integer", "value": elDecimals},
+            {
+                "type": "string",
+                "value": name,
+            },
+            {
+                "type": "string",
+                "value": description,
+            },
+            {"type": "integer", "value": clDecimals},
+        ]
+        txn = generator.generateInvokeScript(
+            publicKey=sender.publicKey,
             dappAddress=self.oracleAddress,
             functionName="issueAndRegister",
-            params=[
-                {
-                    "type": "string",
-                    "value": common_utils.clean_hex_prefix(erc20Address),
-                },
-                {"type": "integer", "value": elDecimals},
-                {
-                    "type": "string",
-                    "value": name,
-                },
-                {
-                    "type": "string",
-                    "value": description,
-                },
-                {"type": "integer", "value": clDecimals},
-            ],
+            params=params,
             txFee=txFee,
         )
+        signer.signTx(txn, privateKey=sender.privateKey)
+        return txn
 
     def transfer(
         self,
