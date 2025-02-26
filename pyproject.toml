@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "units-network"
-version = "0.1.6+009"
+version = "0.1.6+010"
 description = "Scripts and classes to interact with Unit0"
 dependencies = ["pywaves~=1.0", "web3~=7.2", "pymerkle~=6.1"]
 readme = "README.md"
@@ -20,11 +20,7 @@ Homepage = "https://github.com/UnitsNetwork/examples"
 where = ["."]
 
 [tool.setuptools.package-data]
-"units_network" = [
-  "scripts/Erc20.json",
-  "scripts/NativeBridge.json",
-  "scripts/StandardBridge.json",
-]
+"units_network.abi" = ["*.json"]
 
 [project.scripts]
 u0-transfer-c2e = "units_network.scripts.transfer_c2e:main"
