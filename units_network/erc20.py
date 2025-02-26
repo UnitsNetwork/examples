@@ -2,10 +2,11 @@ import json
 from functools import cached_property
 from importlib.resources import files
 
-from base_contract import BaseContract
 from eth_typing import ChecksumAddress
 from web3 import Web3
 from web3.types import Wei
+
+from units_network.base_contract import BaseContract
 
 
 class Erc20(BaseContract):

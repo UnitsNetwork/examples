@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from functools import cached_property
 from importlib.resources import files
 
-from base_contract import BaseContract
 from eth_typing import ChecksumAddress, HexAddress, HexStr
 from eth_utils.abi import event_abi_to_log_topic
 from web3 import Web3
 from web3.types import LogReceipt, Wei
+
+from units_network.base_contract import BaseContract
 
 
 class StandardBridge(BaseContract):

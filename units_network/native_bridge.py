@@ -3,15 +3,16 @@ from dataclasses import dataclass
 from functools import cached_property
 from importlib.resources import files
 
-import common_utils
 import pywaves as pw
-from base_contract import BaseContract
 from eth_account.signers.base import BaseAccount
 from eth_typing import ChecksumAddress, HexStr
 from eth_utils.abi import event_abi_to_log_topic
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import LogReceipt, Nonce, Wei
+
+from units_network import common_utils
+from units_network.base_contract import BaseContract
 
 
 class NativeBridge(BaseContract):
