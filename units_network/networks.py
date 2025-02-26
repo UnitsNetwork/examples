@@ -3,13 +3,15 @@ import os
 from functools import cached_property
 
 import web3.exceptions
+from ens.ens import ChecksumAddress
 from hexbytes import HexBytes
 from pywaves import pw
 from web3 import Web3
 
 import units_network.exceptions
-from units_network.bridge import Bridge
+from units_network.bridges import Bridges
 from units_network.chain_contract import ChainContract, ContractBlock
+from units_network.erc20 import Erc20
 
 
 class NetworkSettings:
@@ -78,8 +80,15 @@ class Network:
         return ChainContract(oracleAddress=self.settings.chain_contract_address)
 
     @cached_property
-    def el_bridge(self) -> Bridge:
-        return Bridge(self.w3, self.cl_chain_contract.getElBridgeAddress())
+    def bridges(self) -> Bridges:
+        return Bridges(
+            self.w3,
+            self.cl_chain_contract.getElNativeBridgeAddress(),
+            self.cl_chain_contract.getElStandardBridgeAddress(),
+        )
+
+    def get_erc20(self, address: ChecksumAddress) -> Erc20:
+        return Erc20(self.w3, address)
 
     def require_settled_block(
         self, block_hash: HexBytes, block_number: int

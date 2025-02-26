@@ -41,16 +41,16 @@ Additional optional arguments:
 
     wei_amount = units.raw_to_wei(user_amount)
     log.info(
-        f"Sending {user_amount} Unit0 ({wei_amount} Wei) from {el_account.address} (E) to {cl_account.address} (C) using Bridge on {network.el_bridge.address} (E)"
+        f"Sending {user_amount} Unit0 ({wei_amount} Wei) from {el_account.address} (E) to {cl_account.address} (C) using Bridge on {network.el_bridge.native_bridge_address} (E)"
     )
 
     log.info("[E] Call Bridge.sendNative")
-    send_native_txn_hash = network.el_bridge.send_native(
-        from_eth_account=el_account,
-        to_waves_pk_hash=common_utils.waves_public_key_hash_bytes(cl_account.address),
-        amount=wei_amount,
+    send_native_txn_hash = network.bridges.native_bridge.send_native(
+        cl_to=cl_account,
+        el_amount=wei_amount,
+        sender_account=el_account,
     )
-    log.info(f"[E] Bridge.sendNative transaction hash: {send_native_txn_hash.hex()}")
+    log.info(f"[E] Bridge.sendNative transaction hash: {send_native_txn_hash}")
 
     while True:
         send_native_receipt: TxReceipt = network.w3.eth.wait_for_transaction_receipt(
@@ -58,7 +58,7 @@ Additional optional arguments:
         )
         log.info(f"[E] Bridge.sendNative receipt: {Web3.to_json(send_native_receipt)}")  # type: ignore
 
-        transfer_params = network.el_bridge.get_transfer_params(
+        transfer_params = network.bridges.get_e2c_transfer_params(
             send_native_receipt["blockHash"], send_native_receipt["transactionHash"]
         )
         log.info(f"[C] Transfer params: {transfer_params}")

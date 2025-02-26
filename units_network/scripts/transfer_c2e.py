@@ -22,7 +22,7 @@ def main():
         and user_amount > 0
     ):
         print(
-            """Transfer native tokens from Consensus Layer (Waves) to Execution Layer (Ethereum).
+            """Transfer tokens from Consensus Layer (Waves) to Execution Layer (Ethereum).
 Required arguments:
   transfer-c2e.py --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 Additional optional arguments:
@@ -43,7 +43,7 @@ Additional optional arguments:
         f"Sending {user_amount} Unit0 ({atomic_amount} in atomic units) from {cl_account.address} (C) to {el_account.address} (E)"
     )
 
-    token = network.cl_chain_contract.getToken()
+    token = network.cl_chain_contract.getNativeToken()
     log.info(f"[C] Token id: {token.assetId}")
 
     transfer_result = network.cl_chain_contract.transfer(

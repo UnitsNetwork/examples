@@ -3,7 +3,7 @@ from time import sleep
 from typing import List, Optional
 
 import pywaves as pw
-from eth_typing import HexAddress, HexStr
+from eth_typing import ChecksumAddress, HexAddress, HexStr
 from pywaves.address import TxSigner
 from pywaves.txGenerator import TxGenerator
 from web3 import Web3
@@ -42,15 +42,19 @@ class ChainContract(ExtendedOracle):
         r = self.evaluate("isContractSetup()")
         return r and r["result"] and r["result"]["value"]
 
-    def getToken(self) -> pw.Asset:
+    def getNativeToken(self) -> pw.Asset:
         r: str = self.getData("tokenId")
         return pw.Asset(r)  # type: ignore
 
-    def getElBridgeAddress(self) -> str:
-        return self.getData("elBridgeAddress")
+    def getElNativeBridgeAddress(self) -> ChecksumAddress:
+        return Web3.to_checksum_address(self.getData("elBridgeAddress"))
 
-    def getElStandardBridgeAddress(self) -> str:
-        return self.getData("elStandardBridgeAddress")
+    def getElStandardBridgeAddress(self) -> ChecksumAddress:
+        return Web3.to_checksum_address(self.getData("elStandardBridgeAddress"))
+
+    def getRegisteredAssets(self):
+        xs = self.getData(regex="assetRegistryIndex_.*")
+        return [pw.Asset(x["value"]) for x in xs]
 
     def waitForFinalized(
         self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
