@@ -8,7 +8,7 @@ from web3 import Web3
 from web3.types import FilterParams
 
 from units_network.merkle import get_merkle_proofs
-from units_network.NativeBridge import NativeBridge
+from units_network.native_bridge import NativeBridge
 from units_network.standard_bridge import StandardBridge
 
 
