@@ -62,3 +62,9 @@ class ERC20BridgeInitiatedEvent:
             8, byteorder="big", signed=False
         ).rjust(32, b"\x00")
         return local_token_bytes + cl_to_bytes + cl_amount_bytes
+
+    def __repr__(self) -> str:
+        return (
+            f"ERC20BridgeInitiatedEvent(local_token={self.local_token}, "
+            f"from_address={self.from_address}, cl_to={self.cl_to}, cl_amount={self.cl_amount})"
+        )

@@ -61,3 +61,9 @@ class SentNative:
 
     def to_merkle_leaf(self) -> bytes:
         return self.data
+
+    def __repr__(self) -> str:
+        return (
+            f"SentNative(waves_recipient={self.waves_recipient.to_0x_hex()}, "
+            f"amount={self.amount}, data={self.data.to_0x_hex()})"
+        )

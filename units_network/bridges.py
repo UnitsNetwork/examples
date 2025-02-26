@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from eth_typing import ChecksumAddress
+from eth_typing import ChecksumAddress, HexStr
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import FilterParams
@@ -64,9 +64,10 @@ class Bridges(object):
             if len(topics) == 0:
                 continue
 
-            if topics[0] == self.native_bridge.sent_native_topic:
+            topic = HexStr(topics[0].to_0x_hex())
+            if topic == self.native_bridge.sent_native_topic:
                 evt = self.native_bridge.parse_sent_native(log)
-            elif topics[0] == self.standard_bridge.erc20_bridge_initiated_topic:
+            elif topic == self.standard_bridge.erc20_bridge_initiated_topic:
                 evt = self.standard_bridge.parse_erc20_bridge_initiated(log)
             else:
                 continue
