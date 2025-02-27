@@ -62,9 +62,8 @@ class NativeBridge(BaseContract):
 
     def parse_sent_native(self, log: LogReceipt) -> SentNative:
         args = self.contract.events.SentNative().process_log(log)["args"]
-        print(f"parse_sent_native, args: {args}")  # TODO: types?
         return SentNative(
-            waves_recipient=args["wavesRecipient"],
+            waves_recipient=HexBytes(args["wavesRecipient"]),
             amount=Wei(args["amount"]),
             data=log["data"],
         )
