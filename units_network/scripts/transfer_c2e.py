@@ -26,7 +26,7 @@ def main():
     ):
         print(
             """Transfer assets from Consensus Layer (Waves) to Execution Layer (Ethereum).
-Required arguments:
+Usage:
   transfer-c2e.py --waves-private-key <Waves private key in base58> --eth-private-key <Ethereum private key in HEX with 0x>
 Additional optional arguments:
   --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet, W - MainNet 

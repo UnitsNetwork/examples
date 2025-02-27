@@ -17,8 +17,12 @@ class Erc20(BaseContract):
         super().__init__(w3, contract_address, abi)
 
     @cached_property
-    def decimals(self) -> Wei:
-        return Wei(self.contract.functions.decimals().call())
+    def name(self) -> int:
+        return self.contract.functions.name().call()
+
+    @cached_property
+    def decimals(self) -> int:
+        return self.contract.functions.decimals().call()
 
     def get_balance(self, address: ChecksumAddress) -> Wei:
         return self.contract.functions.balanceOf(address).call(

@@ -21,7 +21,7 @@ def main():
     if not (cl_account_private_key and len(raw_txn_hash) > 0):
         print(
             """Prepares the chain_contract.withdraw transaction from an Execution Layer (Ethereum) transaction hash.
-Required arguments:
+Usage:
   transfer-e2c-withdraw.py --txn-hash <Ethereum transaction hash in HEX> --waves-private-key <Waves private key in base58> 
 Additional optional arguments:
   --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. W - MainNet""",
