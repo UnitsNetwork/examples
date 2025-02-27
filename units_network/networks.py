@@ -94,29 +94,6 @@ class Network:
     def get_erc20(self, address: ChecksumAddress) -> Erc20:
         return Erc20(self.w3, address)
 
-    def require_finalized_block(self, block: ContractBlock):
-        while True:
-            try:
-                self.cl_chain_contract.waitForFinalized(block)
-                return
-            except units_network.exceptions.TimeExhausted:
-                pass
-
-            self.check_block_presence(block.hash, block.chain_height)
-
-    def check_block_presence(self, block_hash: HexBytes, block_number: BlockNumber):
-        try:
-            expected_block = self.w3.eth.get_block(block_hash)
-            assert "hash" in expected_block
-
-            actual_block = self.w3.eth.get_block(block_number)
-            assert "hash" in actual_block
-
-            if actual_block["hash"] != expected_block["hash"]:
-                raise units_network.exceptions.BlockDisappeared(block_hash)
-        except web3.exceptions.BlockNotFound:
-            raise units_network.exceptions.BlockDisappeared(block_hash)
-
 
 def select(cl_chain_id_str: str):
     s = get_network_settings(cl_chain_id_str)

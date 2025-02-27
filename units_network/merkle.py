@@ -39,4 +39,5 @@ def get_merkle_proofs(
     # A number is required instead of index
     proof = tree.prove_inclusion(for_leaf_index + 1)
     proof_path = proof.serialize()["path"]
-    return proof_path[1:]
+
+    return [HexBytes(x) for x in proof_path[1:]]

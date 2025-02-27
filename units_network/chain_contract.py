@@ -125,7 +125,7 @@ class ChainContract(ExtendedOracle):
     def waitForBlock(
         self, block_hash: HexBytes, timeout: float = 30, poll_latency: float = 2
     ) -> ContractBlock:
-        self.log.debug(f"Wait for {block_hash} on chain contract")
+        self.log.debug(f"Wait for {block_hash.to_0x_hex()} on chain contract")
         rest_timeout = timeout
         while True:
             try:
@@ -143,7 +143,7 @@ class ChainContract(ExtendedOracle):
         )
 
     def getFinalizedBlock(self) -> ContractBlock:
-        hash = self.getData("finalizedBlock")
+        hash = HexBytes(Web3.to_bytes(hexstr=self.getData("finalizedBlock")))
         return self.getBlockMeta(hash)
 
     def getBlockMeta(self, block_hash: HexBytes) -> ContractBlock:
@@ -381,7 +381,7 @@ class ChainContract(ExtendedOracle):
         ]
         withdraw_amount = clAmount // (10**10)
         params = [
-            {"type": "string", "value": blockHashWithTransfer},
+            {"type": "string", "value": blockHashWithTransfer.hex()},
             {"type": "list", "value": proofs},
             {"type": "integer", "value": transferIndexInBlock},
             {"type": "integer", "value": withdraw_amount},
@@ -435,7 +435,7 @@ class ChainContract(ExtendedOracle):
             for p in merkleProofs
         ]
         params = [
-            {"type": "string", "value": blockHashWithTransfer},
+            {"type": "string", "value": blockHashWithTransfer.hex()},
             {"type": "list", "value": proofs},
             {"type": "integer", "value": transferIndexInBlock},
             {"type": "integer", "value": atomicAmount},
