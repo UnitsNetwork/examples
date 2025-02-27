@@ -119,7 +119,7 @@ class ChainContract(ExtendedOracle):
 
             sleep(poll_latency)
         raise units_network.exceptions.TimeExhausted(
-            f"Block {block.hash} not finalized on contract in {timeout} seconds"
+            f"Block {block.hash.to_0x_hex()} not finalized on contract in {timeout} seconds"
         )
 
     def waitForBlock(
@@ -139,7 +139,7 @@ class ChainContract(ExtendedOracle):
 
             sleep(poll_latency)
         raise units_network.exceptions.TimeExhausted(
-            f"Block {block_hash} not found on contract in {timeout} seconds"
+            f"Block {block_hash.to_0x_hex()} not found on contract in {timeout} seconds"
         )
 
     def getFinalizedBlock(self) -> ContractBlock:
