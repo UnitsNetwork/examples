@@ -2,6 +2,7 @@ import json
 from functools import cached_property
 from importlib.resources import files
 
+from eth_account.signers.base import BaseAccount
 from eth_typing import ChecksumAddress
 from web3 import Web3
 from web3.types import Wei
@@ -16,21 +17,24 @@ class Erc20(BaseContract):
         super().__init__(w3, contract_address, abi)
 
     @cached_property
-    def decimals(self):
-        return self.contract.functions.decimals().call()
+    def decimals(self) -> Wei:
+        return Wei(self.contract.functions.decimals().call())
 
-    def get_balance(self, address) -> Wei:
-        address = Web3.to_checksum_address(address)
+    def get_balance(self, address: ChecksumAddress) -> Wei:
         return self.contract.functions.balanceOf(address).call(
             block_identifier="pending"
         )
 
-    def approve(self, spender_address, amount: Wei, sender_account):
+    def approve(
+        self, spender_address: ChecksumAddress, amount: Wei, sender_account: BaseAccount
+    ):
         return self.send_transaction(
             "approve",
             [spender_address, amount],
             sender_account,
         )
 
-    def transfer(self, to_address, amount: Wei, sender_account):
+    def transfer(
+        self, to_address: ChecksumAddress, amount: Wei, sender_account: BaseAccount
+    ):
         return self.send_transaction("transfer", [to_address, amount], sender_account)

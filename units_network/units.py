@@ -4,7 +4,18 @@ from web3.types import Wei
 from typing import Union
 import decimal
 
+UNIT0_EL_DECIMALS = 18
 
+
+def user_to_atomic(amount: Decimal, asset_decimals: int = 8) -> int:
+    return int(amount.scaleb(asset_decimals))
+
+
+def atomic_to_user(amount: int, asset_decimals: int = 8) -> Decimal:
+    return Decimal(amount).scaleb(-asset_decimals)
+
+
+# TODO: remove
 def raw_to_wei(raw_amount: Decimal) -> Wei:
     return Web3.to_wei(raw_amount, "ether")
 

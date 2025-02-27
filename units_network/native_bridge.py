@@ -15,6 +15,22 @@ from units_network import common_utils
 from units_network.base_contract import BaseContract
 
 
+@dataclass
+class SentNative:
+    waves_recipient: HexBytes
+    amount: Wei
+    data: HexBytes
+
+    def to_merkle_leaf(self) -> HexBytes:
+        return self.data
+
+    def __repr__(self) -> str:
+        return (
+            f"SentNative(waves_recipient={self.waves_recipient.to_0x_hex()}, "
+            f"amount={self.amount}, data={self.data.to_0x_hex()})"
+        )
+
+
 class NativeBridge(BaseContract):
     def __init__(self, w3: Web3, contract_address: ChecksumAddress):
         json_abi = files("units_network").joinpath("abi/NativeBridge.json").read_text()
@@ -31,7 +47,7 @@ class NativeBridge(BaseContract):
     ) -> HexStr:
         return self.send_transaction(
             "sendNative",
-            [common_utils.waves_public_key_hash_bytes(cl_to.address)],
+            [common_utils.waves_public_key_hash_bytes(cl_to)],
             sender_account,
             el_amount,
             gas_price,
@@ -44,26 +60,11 @@ class NativeBridge(BaseContract):
             "0x" + event_abi_to_log_topic(self.contract.events.SentNative().abi).hex()
         )
 
-    def parse_sent_native(self, log: LogReceipt):
+    def parse_sent_native(self, log: LogReceipt) -> SentNative:
         args = self.contract.events.SentNative().process_log(log)["args"]
+        print(f"parse_sent_native, args: {args}")  # TODO: types?
         return SentNative(
             waves_recipient=args["wavesRecipient"],
-            amount=args["amount"],
+            amount=Wei(args["amount"]),
             data=log["data"],
-        )
-
-
-@dataclass
-class SentNative:
-    waves_recipient: HexBytes
-    amount: int
-    data: HexBytes
-
-    def to_merkle_leaf(self) -> bytes:
-        return self.data
-
-    def __repr__(self) -> str:
-        return (
-            f"SentNative(waves_recipient={self.waves_recipient.to_0x_hex()}, "
-            f"amount={self.amount}, data={self.data.to_0x_hex()})"
         )

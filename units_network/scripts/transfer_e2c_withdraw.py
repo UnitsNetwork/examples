@@ -3,6 +3,7 @@ import json
 import sys
 
 import pywaves as pw
+from eth_typing import HexStr
 from hexbytes import HexBytes
 from web3 import Web3
 from web3.types import TxData
@@ -28,7 +29,7 @@ Additional optional arguments:
         )
         exit(1)
 
-    txn_hash = HexBytes(bytes.fromhex(common_utils.clean_hex_prefix(raw_txn_hash)))
+    txn_hash = HexBytes(Web3.to_bytes(hexstr=HexStr(raw_txn_hash)))
 
     network = networks.select(chain_id_str)
 
@@ -46,7 +47,7 @@ Additional optional arguments:
 
     withdraw = network.cl_chain_contract.prepareWithdraw(
         cl_account,
-        transfer_params.block_with_transfer_hash.hex(),
+        transfer_params.block_with_transfer_hash,
         transfer_params.merkle_proofs,
         transfer_params.transfer_index_in_block,
         txn_data["value"],

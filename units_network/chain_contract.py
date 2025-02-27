@@ -1,30 +1,48 @@
 import logging
+from dataclasses import dataclass
 from time import sleep
 from typing import List, Optional
+from urllib.parse import quote
 
 import pywaves as pw
-from eth_typing import ChecksumAddress, HexAddress, HexStr
+from eth_typing import BlockNumber, ChecksumAddress
+from hexbytes import HexBytes
 from pywaves.address import TxSigner
 from pywaves.txGenerator import TxGenerator
 from web3 import Web3
-from web3.types import Wei
 
 import units_network.exceptions
 from units_network import common_utils
 from units_network.extended_address import ExtendedAddress
 from units_network.extended_oracle import ExtendedOracle
 
+SEP = ","
 
-class ContractBlock(object):
-    def __init__(self, hash, meta):
-        self.hash = hash
-        self.chain_height = meta["_1"]["value"]
-        self.epoch_number = meta["_2"]["value"]
+
+@dataclass
+class ContractBlock:
+    hash: HexBytes
+    chain_height: BlockNumber
+    epoch_number: int
 
     def __repr__(self) -> str:
-        return (
-            f"ContractBlock({self.hash}, h={self.chain_height}, e={self.epoch_number})"
+        return f"ContractBlock({self.hash.to_0x_hex()}, h={self.chain_height}, e={self.epoch_number})"
+
+    @classmethod
+    def from_meta(cls, hash: HexBytes, meta: dict) -> "ContractBlock":
+        return cls(
+            hash=hash,
+            chain_height=BlockNumber(meta["_1"]["value"]),
+            epoch_number=meta["_2"]["value"],
         )
+
+
+@dataclass
+class RegisteredAsset:
+    index: int
+    cl_asset: pw.Asset
+    el_erc20_address: ChecksumAddress
+    ratio_exponent: int
 
 
 class ChainContract(ExtendedOracle):
@@ -52,9 +70,29 @@ class ChainContract(ExtendedOracle):
     def getElStandardBridgeAddress(self) -> ChecksumAddress:
         return Web3.to_checksum_address(self.getData("elStandardBridgeAddress"))
 
-    def getRegisteredAssets(self):
-        xs = self.getData(regex="assetRegistryIndex_.*")
+    def getRegisteredAssets(self) -> List[pw.Asset]:
+        xs = self.getData(regex=quote("^assetRegistryIndex_.+$"))
         return [pw.Asset(x["value"]) for x in xs]
+
+    def getRegisteredAssetSettings(self, asset: pw.Asset) -> Optional[RegisteredAsset]:
+        xs = self.getData(regex=quote(f"^assetRegistry_{asset.assetId}$"))
+        n = len(xs)
+        if n == 0:
+            return None
+        elif n != 1:
+            raise Exception(f"Found multiple asset entries for {asset.assetId}")
+
+        x = xs[0]
+        parts = x.split(SEP)
+        if len(parts) < 3:
+            raise Exception(f"Invalid data format in registry for {asset.assetId}: {x}")
+
+        return RegisteredAsset(
+            index=int(parts[0]),
+            cl_asset=asset,
+            el_erc20_address=Web3.to_checksum_address(parts[1]),
+            ratio_exponent=int(parts[2]),
+        )
 
     def waitForFinalized(
         self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
@@ -85,7 +123,7 @@ class ChainContract(ExtendedOracle):
         )
 
     def waitForBlock(
-        self, block_hash: str, timeout: float = 30, poll_latency: float = 2
+        self, block_hash: HexBytes, timeout: float = 30, poll_latency: float = 2
     ) -> ContractBlock:
         self.log.debug(f"Wait for {block_hash} on chain contract")
         rest_timeout = timeout
@@ -108,23 +146,20 @@ class ChainContract(ExtendedOracle):
         hash = self.getData("finalizedBlock")
         return self.getBlockMeta(hash)
 
-    def getBlockMeta(self, hash: str) -> ContractBlock:
-        if hash.startswith("0x"):
-            hash = hash[2:]
-
-        r = self.evaluate(f'blockMeta("{hash}")')
+    def getBlockMeta(self, block_hash: HexBytes) -> ContractBlock:
+        r = self.evaluate(f'blockMeta("{block_hash.hex()}")')
         try:
             meta = r["result"]["value"]
-            return ContractBlock(hash, meta)
+            return ContractBlock.from_meta(block_hash, meta)
         except Exception:
-            raise units_network.exceptions.BlockNotFound(hash)
+            raise units_network.exceptions.BlockNotFound(block_hash)
 
     def setScript(self, script: str, txFee: int = 5_000_000):
         return self.oracleAcc.setScript(script, txFee)
 
     def setup(
         self,
-        elGenesisBlockHash: HexStr,
+        elGenesisBlockHash: HexBytes,
         minerRewardInTokens: float = 1.8,
         daoAddress: str = "",
         daoRewardInTokens: float = 0.2,
@@ -138,7 +173,7 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": common_utils.clean_hex_prefix(elGenesisBlockHash),
+                    "value": elGenesisBlockHash.hex(),
                 },
                 {
                     "type": "integer",
@@ -153,7 +188,7 @@ class ChainContract(ExtendedOracle):
     def join(
         self,
         miner: pw.Address,
-        elRewardAddress: HexStr,
+        elRewardAddress: ChecksumAddress,
         txFee: int = 500_000,
     ):
         return miner.invokeScript(
@@ -162,7 +197,7 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": elRewardAddress,
+                    "value": elRewardAddress.lower(),
                 },
             ],
             txFee=txFee,
@@ -172,7 +207,7 @@ class ChainContract(ExtendedOracle):
         self,
         sender: pw.Address,
         asset: pw.Asset,
-        erc20Address: HexStr,
+        erc20Address: ChecksumAddress,
         elDecimals: int,
         txFee: int = 500_000,
     ):
@@ -184,7 +219,7 @@ class ChainContract(ExtendedOracle):
         self,
         sender: pw.Address,
         assets: List[pw.Asset],
-        erc20Addresses: List[HexStr],
+        erc20Addresses: List[ChecksumAddress],
         elDecimals: List[int],
         txFee: int = 500_000,
     ):
@@ -197,7 +232,7 @@ class ChainContract(ExtendedOracle):
         self,
         sender: pw.Address,
         assets: List[pw.Asset],
-        erc20Addresses: List[HexStr],
+        erc20Addresses: List[ChecksumAddress],
         elDecimals: List[int],
         txFee: int = 500_000,
     ):
@@ -215,7 +250,7 @@ class ChainContract(ExtendedOracle):
                 "value": [
                     {
                         "type": "string",
-                        "value": common_utils.clean_hex_prefix(erc20Address),
+                        "value": erc20Address.lower(),
                     }
                     for erc20Address in erc20Addresses
                 ],
@@ -238,7 +273,7 @@ class ChainContract(ExtendedOracle):
     def issueAndRegister(
         self,
         sender: pw.Address,
-        erc20Address: HexStr,
+        erc20Address: ChecksumAddress,
         elDecimals: int,
         name: str,
         description: str,
@@ -253,7 +288,7 @@ class ChainContract(ExtendedOracle):
     def prepareIssueAndRegister(
         self,
         sender: pw.Address,
-        erc20Address: HexStr,
+        erc20Address: ChecksumAddress,
         elDecimals: int,
         name: str,
         description: str,
@@ -265,7 +300,7 @@ class ChainContract(ExtendedOracle):
         params = [
             {
                 "type": "string",
-                "value": common_utils.clean_hex_prefix(erc20Address),
+                "value": erc20Address.lower(),
             },
             {"type": "integer", "value": elDecimals},
             {
@@ -291,7 +326,7 @@ class ChainContract(ExtendedOracle):
     def transfer(
         self,
         fromWavesAccount: pw.Address,
-        toEthAddress: HexAddress,
+        toEthAddress: ChecksumAddress,
         token: pw.Asset,
         atomicAmount: int,
         txFee: int = 500_000,
@@ -302,7 +337,7 @@ class ChainContract(ExtendedOracle):
             params=[
                 {
                     "type": "string",
-                    "value": common_utils.clean_hex_prefix(toEthAddress),
+                    "value": toEthAddress.lower(),
                 }
             ],
             payments=[{"amount": atomicAmount, "assetId": token.assetId}],
@@ -312,10 +347,10 @@ class ChainContract(ExtendedOracle):
     def withdraw(
         self,
         sender: pw.Address,
-        blockHashWithTransfer: str,
-        merkleProofs: List[str],
+        blockHashWithTransfer: HexBytes,
+        merkleProofs: List[HexBytes],
         transferIndexInBlock: int,
-        amount: Wei,
+        clAmount: int,
         txFee: int = 500_000,
     ):
         txn = self.prepareWithdraw(
@@ -323,7 +358,7 @@ class ChainContract(ExtendedOracle):
             blockHashWithTransfer,
             merkleProofs,
             transferIndexInBlock,
-            amount,
+            clAmount,
             txFee,
         )
         return sender.broadcastTx(txn)
@@ -331,10 +366,10 @@ class ChainContract(ExtendedOracle):
     def prepareWithdraw(
         self,
         sender: pw.Address,
-        blockHashWithTransfer: str,
-        merkleProofs: List[str],
+        blockHashWithTransfer: HexBytes,
+        merkleProofs: List[HexBytes],
         transferIndexInBlock: int,
-        amount: Wei,
+        clAmount: int,
         txFee: int = 500_000,
     ):
         generator = TxGenerator(self.pw)  # type: ignore
@@ -344,7 +379,7 @@ class ChainContract(ExtendedOracle):
             {"type": "binary", "value": f"base64:{common_utils.hex_to_base64(p)}"}
             for p in merkleProofs
         ]
-        withdraw_amount = amount // (10**10)
+        withdraw_amount = clAmount // (10**10)
         params = [
             {"type": "string", "value": blockHashWithTransfer},
             {"type": "list", "value": proofs},
@@ -364,8 +399,8 @@ class ChainContract(ExtendedOracle):
     def withdrawAsset(
         self,
         sender: pw.Address,
-        blockHashWithTransfer: str,
-        merkleProofs: List[str],
+        blockHashWithTransfer: HexBytes,
+        merkleProofs: List[HexBytes],
         transferIndexInBlock: int,
         atomicAmount: int,
         asset: pw.Asset,
@@ -385,8 +420,8 @@ class ChainContract(ExtendedOracle):
     def prepareWithdrawAsset(
         self,
         sender: pw.Address,
-        blockHashWithTransfer: str,
-        merkleProofs: List[str],
+        blockHashWithTransfer: HexBytes,
+        merkleProofs: List[HexBytes],
         transferIndexInBlock: int,
         atomicAmount: int,
         asset: pw.Asset,

@@ -15,7 +15,7 @@ from units_network.standard_bridge import StandardBridge
 @dataclass()
 class E2CTransferParams:
     block_with_transfer_hash: HexBytes
-    merkle_proofs: List[str]
+    merkle_proofs: List[HexBytes]
     transfer_index_in_block: int
 
 
@@ -42,7 +42,6 @@ class Bridges(object):
     def get_e2c_transfer_params(
         self, block_hash: HexBytes, transfer_txn_hash: HexBytes
     ) -> E2CTransferParams:
-        block_hash_hex = block_hash.hex()
         block_logs = self.w3.eth.get_logs(
             FilterParams(
                 blockHash=block_hash,
@@ -54,10 +53,10 @@ class Bridges(object):
         )
 
         self.log.debug(
-            f"Bridge logs in block 0x{block_hash_hex}: {Web3.to_json(block_logs)}"  # type: ignore
+            f"Bridge logs in block {block_hash.to_0x_hex()}: {Web3.to_json(block_logs)}"  # type: ignore
         )
 
-        merkle_leaves = []
+        merkle_leaves: List[HexBytes] = []
         transfer_index_in_block = -1
         for i, log in enumerate(block_logs):
             topics = log["topics"]
@@ -73,7 +72,7 @@ class Bridges(object):
                 continue
 
             self.log.debug(f"Parsed event at #{i}: {evt}")
-            merkle_leaves.append(evt.to_merkle_leaf().hex())
+            merkle_leaves.append(evt.to_merkle_leaf())
 
             if log["transactionHash"] == transfer_txn_hash:
                 self.log.debug(f"Found transfer transaction at #{i}")

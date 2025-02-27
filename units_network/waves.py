@@ -5,7 +5,7 @@ from time import sleep
 from pywaves import pw
 
 
-def force_success(log: Logger, r, error_text, wait=True, pw=pw):
+def force_success(log: Logger, r, error_text: str, wait=True, pw=pw):
     if not r or "error" in r:
         log.error(f"{error_text}: {r}")
         sys.exit(1)
