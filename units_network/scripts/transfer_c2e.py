@@ -48,9 +48,8 @@ Additional optional arguments:
     )
 
     if registered_asset:
-        el_decimals = network.bridges.standard_bridge.token_ratio(
-            registered_asset.el_erc20_address
-        )
+        erc20 = network.get_erc20(registered_asset.el_erc20_address)
+        el_decimals = erc20.decimals
         log.info(
             f"[C] Registered asset ERC20 address: {registered_asset.el_erc20_address}, decimals: {el_decimals}"
         )
