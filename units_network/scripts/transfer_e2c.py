@@ -45,7 +45,7 @@ Additional optional arguments:
             )
 
     log.info(
-        f"[C] Selected asset '{asset.name}' with id {asset.assetId} and {asset.decimals} decimals"
+        f"[C] Selected asset '{asset.name.decode("ascii")}' with id {asset.assetId} and {asset.decimals} decimals"
     )
 
     if registered_asset:
@@ -59,7 +59,7 @@ Additional optional arguments:
 
     cl_atomic_amount = units.user_to_atomic(args.amount, asset.decimals)
     el_atomic_amount = Wei(units.user_to_atomic(args.amount, el_decimals))
-    sending_str = f"Sending {args.amount} assets from {el_account.address} (E) to {cl_account.address} using "
+    sending_str = f"Sending {args.amount} assets from {el_account.address} (E) to {cl_account.address} using"
     atomic_units_str = (
         f"in C atomic units: {cl_atomic_amount}, in E atomic units: {el_atomic_amount}"
     )

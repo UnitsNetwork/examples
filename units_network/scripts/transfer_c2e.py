@@ -44,7 +44,7 @@ Additional optional arguments:
             )
 
     log.info(
-        f"[C] Selected asset '{asset.name}' with id {asset.assetId} and {asset.decimals} decimals"
+        f"[C] Selected asset '{asset.name.decode("ascii")}' with id {asset.assetId} and {asset.decimals} decimals"
     )
 
     if registered_asset:
