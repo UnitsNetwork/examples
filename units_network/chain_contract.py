@@ -82,7 +82,7 @@ class ChainContract(ExtendedOracle):
         elif n != 1:
             raise Exception(f"Found multiple asset entries for {asset.assetId}")
 
-        x = xs[0]
+        x = xs[0]["value"] or ""
         parts = x.split(SEP)
         if len(parts) < 3:
             raise Exception(f"Invalid data format in registry for {asset.assetId}: {x}")

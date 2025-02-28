@@ -9,16 +9,14 @@ from web3 import Web3
 from web3.types import TxData
 
 from units_network import common_utils, networks
+from units_network.args import Args
 
 
 def main():
     log = common_utils.configure_cli_logger(__file__)
 
-    raw_txn_hash = common_utils.get_argument_value("--txn-hash") or ""
-    cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
-    chain_id_str = common_utils.get_argument_value("--chain-id") or "S"
-
-    if not (cl_account_private_key and len(raw_txn_hash) > 0):
+    args = Args()
+    if not (args.waves_private_key and args.txn_hash):
         print(
             """Prepares the chain_contract.withdraw transaction from an Execution Layer (Ethereum) transaction hash.
 Usage:
@@ -29,12 +27,10 @@ Additional optional arguments:
         )
         exit(1)
 
-    txn_hash = HexBytes(Web3.to_bytes(hexstr=HexStr(raw_txn_hash)))
+    network = networks.create_manual(args.network_settings)
+    cl_account = pw.Address(privateKey=args.waves_private_key)
 
-    network = networks.select(chain_id_str)
-
-    cl_account = pw.Address(privateKey=cl_account_private_key)
-
+    txn_hash = HexBytes(Web3.to_bytes(hexstr=HexStr(args.txn_hash)))
     txn_data: TxData = network.w3.eth.get_transaction(txn_hash)
     assert "blockHash" in txn_data and "value" in txn_data
 

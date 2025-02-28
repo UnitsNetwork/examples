@@ -1,29 +1,18 @@
 #!/usr/bin/env python
 import sys
-from decimal import Decimal
 
 import pywaves as pw
 from web3.types import Wei
 
 from units_network import common_utils, networks, units
+from units_network.args import Args
 
 
 def main():
     log = common_utils.configure_cli_logger(__file__)
 
-    cl_account_private_key = common_utils.get_argument_value("--waves-private-key")
-    el_account_private_key = common_utils.get_argument_value("--eth-private-key")
-    chain_id_str = common_utils.get_argument_value("--chain-id") or "S"
-    chain_settings_file = common_utils.get_argument_value("--chain-settings")
-    asset_id = common_utils.get_argument_value("--asset-id")
-    user_amount = Decimal(common_utils.get_argument_value("--amount") or "0.01")
-
-    if not (
-        cl_account_private_key
-        and el_account_private_key
-        and el_account_private_key.startswith("0x")
-        and user_amount > 0
-    ):
+    args = Args()
+    if not (args.waves_private_key and args.eth_private_key and args.amount > 0):
         print(
             """Transfer assets from Consensus Layer (Waves) to Execution Layer (Ethereum).
 Usage:
@@ -33,31 +22,27 @@ Additional optional arguments:
   --chain-settings <path/to/chain/settings.json> (default: empty):
      if specified - use network settings from the file instead of based on --chain-id
   --asset-id <Waves asset id in Base58> (default: Unit0 of selected network)
-  --amount N (default: 0.01): amount of transferred assets""",
+  --amount N (default: 0.01): amount of transferred assets
+  --args <path/to/args.json>: take default argument values from this file""",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    network_settings = (
-        networks.read_network_settings(chain_settings_file)
-        if chain_settings_file
-        else networks.get_network_settings(chain_id_str)
-    )
-    network = networks.create_manual(network_settings)
+    network = networks.create_manual(args.network_settings)
 
-    cl_account = pw.Address(privateKey=cl_account_private_key)
-    el_account = network.w3.eth.account.from_key(el_account_private_key)
+    cl_account = pw.Address(privateKey=args.waves_private_key)
+    el_account = network.w3.eth.account.from_key(args.eth_private_key)
 
     native_token = network.cl_chain_contract.getNativeToken()
     registered_asset = None
-    if asset_id == native_token.assetId or not asset_id:
+    if args.asset_id == native_token.assetId or not args.asset_id:
         asset = native_token
     else:
-        asset = pw.Asset(asset_id)
+        asset = pw.Asset(args.asset_id)
         registered_asset = network.cl_chain_contract.getRegisteredAssetSettings(asset)
         if not registered_asset:
             raise Exception(
-                f"{asset_id} is neither a native token {native_token.assetId}, nor a registered asset"
+                f"{args.asset_id} is neither a native token {native_token.assetId}, nor a registered asset"
             )
 
     log.info(
@@ -74,10 +59,10 @@ Additional optional arguments:
     else:
         el_decimals = units.UNIT0_EL_DECIMALS
 
-    cl_atomic_amount = units.user_to_atomic(user_amount, asset.decimals)
-    el_atomic_amount = Wei(units.user_to_atomic(user_amount, el_decimals))
+    cl_atomic_amount = units.user_to_atomic(args.amount, asset.decimals)
+    el_atomic_amount = Wei(units.user_to_atomic(args.amount, el_decimals))
     log.info(
-        f"Sending {user_amount} assets from {cl_account.address} (C) to {el_account.address} (E)"
+        f"Sending {args.amount} assets from {cl_account.address} (C) to {el_account.address} (E)"
     )
     log.debug(f"C atomic units: {cl_atomic_amount}, E atomic units: {el_atomic_amount}")
 

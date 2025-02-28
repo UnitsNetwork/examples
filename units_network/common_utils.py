@@ -2,23 +2,12 @@ import base64
 import logging
 import logging.config
 import os
-import sys
 from typing import Optional
 
 from base58 import b58decode
 from ens.ens import HexAddress
 from hexbytes import HexBytes
 from pywaves import pw
-
-
-def get_argument_value(arg_name: str):
-    try:
-        index = sys.argv.index(arg_name)
-        if index != -1 and index + 1 < len(sys.argv):
-            return sys.argv[index + 1]
-    except ValueError:
-        pass
-    return None
 
 
 def hex_to_base64(x: HexBytes) -> str:
