@@ -5,7 +5,7 @@ from typing import List, Optional
 from urllib.parse import quote
 
 import pywaves as pw
-from eth_typing import BlockNumber, ChecksumAddress
+from eth_typing import AnyAddress, BlockNumber, ChecksumAddress
 from hexbytes import HexBytes
 from pywaves.address import TxSigner
 from pywaves.txGenerator import TxGenerator
@@ -74,13 +74,21 @@ class ChainContract(ExtendedOracle):
         xs = self.getData(regex=quote("^assetRegistryIndex_.+$"))
         return [pw.Asset(x["value"]) for x in xs]
 
-    def findRegisteredAsset(self, asset_name: str) -> Optional[pw.Asset]:
-        assets = self.getRegisteredAssets()
-        asset_name = asset_name.lower()
-        for asset in assets:
-            if asset.name.decode("ascii").lower() == asset_name:
-                return asset
-        return None
+    def getRegisteredAssetByErc20(
+        self, erc20_address: AnyAddress
+    ) -> Optional[pw.Asset]:
+        xs = self.getData(regex=quote(f"assetRegistryAssetE_{erc20_address.lower()}"))
+        n = len(xs)
+        if n == 0:
+            return None
+        elif n != 1:
+            raise Exception(
+                f"Found multiple registered asset entries for {erc20_address}"
+            )
+
+        index = xs[0]["value"]
+        xs = self.getData(regex=quote(f"^assetRegistryIndex_{index}$"))
+        return next((pw.Asset(x["value"]) for x in xs), None)
 
     def getRegisteredAssetSettings(self, asset: pw.Asset) -> Optional[RegisteredAsset]:
         xs = self.getData(regex=quote(f"^assetRegistry_{asset.assetId}$"))
@@ -88,7 +96,9 @@ class ChainContract(ExtendedOracle):
         if n == 0:
             return None
         elif n != 1:
-            raise Exception(f"Found multiple asset entries for {asset.assetId}")
+            raise Exception(
+                f"Found multiple registered asset entries for {asset.assetId}"
+            )
 
         x = xs[0]["value"] or ""
         parts = x.split(SEP)
@@ -101,6 +111,14 @@ class ChainContract(ExtendedOracle):
             el_erc20_address=Web3.to_checksum_address(parts[1]),
             ratio_exponent=int(parts[2]),
         )
+
+    def findRegisteredAsset(self, asset_name: str) -> Optional[pw.Asset]:
+        assets = self.getRegisteredAssets()
+        asset_name = asset_name.lower()
+        for asset in assets:
+            if asset.name.decode("ascii").lower() == asset_name:
+                return asset
+        return None
 
     def waitForFinalized(
         self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
