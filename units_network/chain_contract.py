@@ -74,6 +74,14 @@ class ChainContract(ExtendedOracle):
         xs = self.getData(regex=quote("^assetRegistryIndex_.+$"))
         return [pw.Asset(x["value"]) for x in xs]
 
+    def findRegisteredAsset(self, asset_name: str) -> Optional[pw.Asset]:
+        assets = self.getRegisteredAssets()
+        asset_name = asset_name.lower()
+        for asset in assets:
+            if asset.name.decode("ascii").lower() == asset_name:
+                return asset
+        return None
+
     def getRegisteredAssetSettings(self, asset: pw.Asset) -> Optional[RegisteredAsset]:
         xs = self.getData(regex=quote(f"^assetRegistry_{asset.assetId}$"))
         n = len(xs)

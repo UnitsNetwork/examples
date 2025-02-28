@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 import sys
 
-import pywaves as pw
 from web3 import Web3
 from web3.types import TxReceipt, Wei
 
 from units_network import common_utils, networks, units
 from units_network.args import Args
+from units_network.cli_utils import find_asset
 
 
 def main():
     log = common_utils.configure_cli_logger(__file__)
 
     args = Args()
-    if not (args.eth_private_key and args.asset_id and args.amount > 0):
+    if not (
+        args.eth_private_key and args.amount > 0 and (args.asset_id or args.asset_name)
+    ):
         print(
             """Approves token movements from Execution Layer (Ethereum) to Consensus Layer (Waves).
 Usage:
   erc20_approve.py --eth-private-key <Ethereum private key in HEX with 0x> --asset-id <Waves asset id in Base58>
 Required arguments:
   --asset-id <Waves asset id in Base58>: the matching ERC20 address will be found in the chain contract registry
+  --asset-name <Waves asset name>: an alternative to --asset-id
 Additional optional arguments:
   --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. W - MainNet
   --amount N (default: 0.01): amount of transferred Unit0 tokens
@@ -29,15 +32,15 @@ Additional optional arguments:
         exit(1)
 
     network = networks.create_manual(args.network_settings)
-    asset = pw.Asset(args.asset_id)
-    registered_asset = network.cl_chain_contract.getRegisteredAssetSettings(asset)
-    if not registered_asset:
-        raise Exception(f"{args.asset_id} is not a registered in the chain contract")
 
-    erc20 = network.get_erc20(registered_asset.el_erc20_address)
-    el_atomic_amount = Wei(units.user_to_atomic(args.amount, erc20.decimals))
+    asset = find_asset(network, args.asset_id, args.asset_name)
+    erc20 = asset.erc20
+    if not erc20:
+        raise Exception(f"Can't find asset {args.asset_id}")
+
+    el_atomic_amount = Wei(units.user_to_atomic(args.amount, asset.el_decimals))
     log.info(
-        f"Approving a transfer of {args.amount} (in atomic units: {el_atomic_amount}) assets '{erc20.name}' at {registered_asset.el_erc20_address}"
+        f"Approving a transfer of {args.amount} (in atomic units: {el_atomic_amount}) assets '{erc20.name}' at {erc20.contract_address}"
     )
 
     el_account = network.w3.eth.account.from_key(args.eth_private_key)

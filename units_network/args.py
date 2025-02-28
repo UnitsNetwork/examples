@@ -16,6 +16,7 @@ class ArgsData:
     chain_id: Optional[str] = None
     network_settings: Optional[NetworkSettings] = None
     asset_id: Optional[str] = None
+    asset_name: Optional[str] = None
     amount: Optional[Decimal] = None
     txn_hash: Optional[str] = None
 
@@ -78,6 +79,10 @@ class Args:
     @cached_property
     def asset_id(self) -> Optional[str]:
         return get_argument_value("--asset-id") or self.default.asset_id
+
+    @cached_property
+    def asset_name(self) -> Optional[str]:
+        return get_argument_value("--asset-name") or self.default.asset_name
 
     @cached_property
     def amount(self) -> Decimal:
