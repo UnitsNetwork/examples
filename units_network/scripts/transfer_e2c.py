@@ -20,8 +20,6 @@ Usage:
   transfer-e2c.py --eth-private-key <Ethereum private key in HEX with 0x> --waves-private-key <Waves private key in base58> 
 Additional optional arguments:
   --chain-id <S|T|W> (default: S): S - StageNet, T - TestNet. W - MainNet
-  --chain-settings <path/to/chain/settings.json> (default: empty):
-     if specified - use network settings from the file instead of based on --chain-id
   --asset-id <Waves asset id in Base58> (default: Unit0 of selected network)
   --amount N (default: 0.01): amount of transferred Unit0 tokens
   --args <path/to/args.json>: take default argument values from this file""",

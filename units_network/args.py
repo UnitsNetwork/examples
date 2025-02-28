@@ -20,15 +20,17 @@ class ArgsData:
     txn_hash: Optional[str] = None
 
     @staticmethod
-    def from_json_file(file_path: str) -> "Args":
+    def from_json_file(file_path: str) -> "ArgsData":
         with open(file_path, "r", encoding="utf-8") as file:
             data = json.load(file)
+
+        if "network_settings" in data and isinstance(data["network_settings"], dict):
+            data["network_settings"] = NetworkSettings(**data["network_settings"])
 
         if "amount" in data and data["amount"] is not None:
             data["amount"] = Decimal(data["amount"])
 
-        # Convert to Args instance
-        return Args(**data)
+        return ArgsData(**data)
 
 
 def get_argument_value(arg_name: str) -> Optional[str]:
@@ -67,11 +69,11 @@ class Args:
     @cached_property
     def network_settings(self) -> NetworkSettings:
         r = (
-            networks.get_network_settings(self.chain_id)
+            networks.get_predefined_network_settings(self.chain_id)
             if self.chain_id
             else self.default.network_settings
         )
-        return r if r else networks.get_network_settings("S")
+        return r if r else networks.get_predefined_network_settings("S")
 
     @cached_property
     def asset_id(self) -> Optional[str]:

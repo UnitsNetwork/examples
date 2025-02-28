@@ -1,19 +1,14 @@
-import json
 import logging
 import os
 from dataclasses import dataclass
 from functools import cached_property
 
-from eth_typing import BlockNumber
-import web3.exceptions
 from ens.ens import ChecksumAddress
-from hexbytes import HexBytes
 from pywaves import pw
 from web3 import Web3
 
-import units_network.exceptions
 from units_network.bridges import Bridges
-from units_network.chain_contract import ChainContract, ContractBlock
+from units_network.chain_contract import ChainContract
 from units_network.erc20 import Erc20
 
 
@@ -57,18 +52,12 @@ main_net = NetworkSettings(
 networks = {n.cl_chain_id_str: n for n in [stage_net, test_net, main_net]}
 
 
-def get_network_settings(chain_id_str: str) -> NetworkSettings:
+def get_predefined_network_settings(chain_id_str: str) -> NetworkSettings:
     r = networks.get(chain_id_str)
     if not r:
         raise ValueError(f"Unknown network {chain_id_str}")
 
     return r
-
-
-def read_network_settings(file_path: str) -> NetworkSettings:
-    with open(file_path, "r", encoding="utf-8") as file:
-        data = json.load(file)
-    return NetworkSettings(**data)
 
 
 class Network:
@@ -93,11 +82,6 @@ class Network:
 
     def get_erc20(self, address: ChecksumAddress) -> Erc20:
         return Erc20(self.w3, address)
-
-
-def select(cl_chain_id_str: str):
-    s = get_network_settings(cl_chain_id_str)
-    return create_manual(s)
 
 
 def create_manual(settings: NetworkSettings) -> Network:
