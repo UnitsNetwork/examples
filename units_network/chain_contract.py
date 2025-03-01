@@ -112,11 +112,12 @@ class ChainContract(ExtendedOracle):
             ratio_exponent=int(parts[2]),
         )
 
+    # TODO: Does not work with WAVES
     def findRegisteredAsset(self, asset_name: str) -> Optional[pw.Asset]:
         assets = self.getRegisteredAssets()
         asset_name = asset_name.lower()
         for asset in assets:
-            if asset.name.decode("ascii").lower() == asset_name:
+            if asset.name and asset.name.decode("ascii").lower() == asset_name:
                 return asset
         return None
 
