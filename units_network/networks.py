@@ -30,7 +30,7 @@ stage_net = NetworkSettings(
     cl_chain_id_str="S",
     cl_node_api_url="https://nodes-stagenet.wavesnodes.com",
     el_node_api_url="https://rpc-stagenet.unit0.dev",
-    chain_contract_address="3MSYQZgB25kRqg9pAAbtgBmvNkx1B1AzdY1",
+    chain_contract_address="3MjDHGn2ZbeXYj7YQ5ALArv5R2Vy914Phf7",
 )
 
 test_net = NetworkSettings(
