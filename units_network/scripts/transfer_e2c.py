@@ -50,7 +50,9 @@ Additional optional arguments:
         log.info(f"[E] {sending_str} StandardBridge.bridgeERC20. {atomic_units_str}")
         send_txn_hash = network.bridges.standard_bridge.bridge_erc20(
             token=asset.erc20.contract_address,
-            cl_to=common_utils.waves_public_key_hash_bytes(cl_account),
+            cl_to=Web3.to_checksum_address(
+                common_utils.waves_public_key_hash_bytes(cl_account)
+            ),
             el_amount=el_atomic_amount,
             sender_account=el_account,
         )

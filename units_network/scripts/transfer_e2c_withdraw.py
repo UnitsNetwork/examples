@@ -66,7 +66,7 @@ Additional optional arguments:
         raise Exception("Can't find a transfer log in receipt")
 
     log.info(
-        f"Found event: {transfer_evt}. Amount: {units.atomic_to_user(cl_amount, asset.decimals)}, asset: {asset.name.decode("ascii")}"
+        f"Found event: {transfer_evt}. Amount: {units.atomic_to_user(cl_amount, asset.decimals)}, asset: {asset.assetId}"
     )
 
     transfer_params = network.bridges.get_e2c_transfer_params(

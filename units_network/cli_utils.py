@@ -4,6 +4,10 @@ from typing import Optional
 from pywaves import pw
 
 from units_network import units
+from units_network.chain_contract import (
+    WAVES_ASSET_ID_IN_PW,
+    WAVES_ASSET_NAME,
+)
 from units_network.erc20 import Erc20
 from units_network.networks import Network
 
@@ -15,7 +19,11 @@ class FoundAsset:
     erc20: Optional[Erc20] = None
 
     def __post_init__(self):
-        self.waves_asset_name = self.waves_asset.name.decode("ascii")
+        self.waves_asset_name = (
+            WAVES_ASSET_NAME
+            if self.waves_asset.assetId == WAVES_ASSET_ID_IN_PW
+            else self.waves_asset.name.decode("ascii")
+        )
 
 
 def find_asset(
@@ -31,7 +39,8 @@ def find_asset(
     native_token = network.cl_chain_contract.getNativeToken()
     if (
         waves_asset_id == native_token.assetId
-        or waves_asset_name.lower() == native_token.name.decode("ascii").lower()
+        or waves_asset_name
+        and waves_asset_name.lower() == native_token.name.decode("ascii").lower()
     ):
         return FoundAsset(native_token, units.UNIT0_EL_DECIMALS)
 

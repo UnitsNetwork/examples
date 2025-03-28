@@ -45,6 +45,12 @@ class RegisteredAsset:
     ratio_exponent: int
 
 
+WAVES_ASSET_NAME = "WAVES"
+WAVES_ASSET_LOWER_NAME = WAVES_ASSET_NAME.lower()
+WAVES_ASSET_ID_IN_CC = "WAVES"
+WAVES_ASSET_ID_IN_PW = ""
+
+
 class ChainContract(ExtendedOracle):
     def __init__(self, oracleAddress=None, seed=None, nonce=0, pywaves=pw):
         # super().__init__(oracleAddress, seed, pywaves)  # Doesn't propagate nonce
@@ -72,7 +78,13 @@ class ChainContract(ExtendedOracle):
 
     def getRegisteredAssets(self) -> List[pw.Asset]:
         xs = self.getData(regex=quote("^assetRegistryIndex_.+$"))
-        return [pw.Asset(x["value"]) for x in xs]
+        assets = []
+        for x in xs:
+            asset_id = x["value"]
+            if asset_id == WAVES_ASSET_ID_IN_CC:
+                asset_id = ""
+            assets.append(pw.Asset(asset_id))
+        return assets
 
     def getRegisteredAssetByErc20(
         self, erc20_address: AnyAddress
@@ -88,22 +100,33 @@ class ChainContract(ExtendedOracle):
 
         index = xs[0]["value"]
         xs = self.getData(regex=quote(f"^assetRegistryIndex_{index}$"))
-        return next((pw.Asset(x["value"]) for x in xs), None)
+        return next(
+            (
+                pw.Asset(
+                    WAVES_ASSET_ID_IN_PW
+                    if x["value"] == WAVES_ASSET_ID_IN_CC
+                    else x["value"]
+                )
+                for x in xs
+            ),
+            None,
+        )
 
     def getRegisteredAssetSettings(self, asset: pw.Asset) -> Optional[RegisteredAsset]:
-        xs = self.getData(regex=quote(f"^assetRegistry_{asset.assetId}$"))
+        cc_id = asset.assetId
+        if cc_id == WAVES_ASSET_ID_IN_PW:
+            cc_id = WAVES_ASSET_ID_IN_CC
+        xs = self.getData(regex=quote(f"^assetRegistry_{cc_id}$"))
         n = len(xs)
         if n == 0:
             return None
         elif n != 1:
-            raise Exception(
-                f"Found multiple registered asset entries for {asset.assetId}"
-            )
+            raise Exception(f"Found multiple registered asset entries for {cc_id}")
 
         x = xs[0]["value"] or ""
         parts = x.split(SEP)
         if len(parts) < 3:
-            raise Exception(f"Invalid data format in registry for {asset.assetId}: {x}")
+            raise Exception(f"Invalid data format in registry for {cc_id}: {x}")
 
         return RegisteredAsset(
             index=int(parts[0]),
@@ -112,12 +135,16 @@ class ChainContract(ExtendedOracle):
             ratio_exponent=int(parts[2]),
         )
 
-    # TODO: Does not work with WAVES
     def findRegisteredAsset(self, asset_name: str) -> Optional[pw.Asset]:
         assets = self.getRegisteredAssets()
         asset_name = asset_name.lower()
         for asset in assets:
-            if asset.name and asset.name.decode("ascii").lower() == asset_name:
+            if (
+                asset_name == WAVES_ASSET_LOWER_NAME
+                and asset.assetId == WAVES_ASSET_ID_IN_PW
+                or asset.name
+                and asset.name.decode("ascii").lower() == asset_name
+            ):
                 return asset
         return None
 
@@ -466,7 +493,10 @@ class ChainContract(ExtendedOracle):
             {"type": "list", "value": proofs},
             {"type": "integer", "value": transferIndexInBlock},
             {"type": "integer", "value": atomicAmount},
-            {"type": "string", "value": asset.assetId},
+            {
+                "type": "string",
+                "value": asset.assetId if asset.assetId else WAVES_ASSET_ID_IN_CC,
+            },
         ]
         txn = generator.generateInvokeScript(
             publicKey=sender.publicKey,

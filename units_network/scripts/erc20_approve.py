@@ -39,14 +39,13 @@ Additional optional arguments:
         raise Exception(f"Can't find asset {args.asset_id}")
 
     el_atomic_amount = Wei(units.user_to_atomic(args.amount, asset.el_decimals))
+    owner_account = network.w3.eth.account.from_key(args.eth_private_key)
+    spender_address = network.bridges.standard_bridge.contract_address
     log.info(
-        f"Approving a transfer of {args.amount} (in atomic units: {el_atomic_amount}) assets '{erc20.name}' at {erc20.contract_address}"
+        f"Approve a transfer of {args.amount} (in atomic units: {el_atomic_amount}) assets '{erc20.name}' ({erc20.contract_address}) of {owner_account.address} by {spender_address}"
     )
 
-    el_account = network.w3.eth.account.from_key(args.eth_private_key)
-    approve_txn_hash = erc20.approve(
-        network.bridges.standard_bridge.contract_address, el_atomic_amount, el_account
-    )
+    approve_txn_hash = erc20.approve(spender_address, el_atomic_amount, owner_account)
     approve_receipt: TxReceipt = network.w3.eth.wait_for_transaction_receipt(
         approve_txn_hash,
     )
