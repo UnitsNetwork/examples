@@ -67,6 +67,7 @@ Here is an example for consensus client
   "asset_name": "TestToken"
 }
 ```
+See all available options in [ArgsData](units_network/args.py).
 
 CLI arguments has precedence over JSON arguments.
 
