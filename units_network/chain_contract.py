@@ -149,7 +149,7 @@ class ChainContract(ExtendedOracle):
         return None
 
     def waitForFinalized(
-        self, block: ContractBlock, timeout: float = 30, poll_latency: float = 2
+        self, block: ContractBlock, timeout: float = 60, poll_latency: float = 2
     ):
         last_finalized_block: List[Optional[ContractBlock]] = [None]
 
@@ -177,7 +177,7 @@ class ChainContract(ExtendedOracle):
         )
 
     def waitForBlock(
-        self, block_hash: HexBytes, timeout: float = 30, poll_latency: float = 2
+        self, block_hash: HexBytes, timeout: float = 60, poll_latency: float = 2
     ) -> ContractBlock:
         self.log.debug(f"Wait for {block_hash.to_0x_hex()} on chain contract")
         rest_timeout = timeout

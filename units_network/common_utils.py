@@ -8,6 +8,7 @@ from base58 import b58decode
 from ens.ens import HexAddress
 from hexbytes import HexBytes
 from pywaves import pw
+from importlib.resources import files
 
 
 def hex_to_base64(x: HexBytes) -> str:
@@ -25,6 +26,8 @@ def configure_cli_logger(
         config_path = os.getenv(
             "LOGGING_CONFIG", os.path.join(os.getcwd(), "logging.conf")
         )
+    if not os.path.exists(config_path):
+        config_path = files("units_network").joinpath("logging.conf")
 
     log_dir = os.getenv("LOGGING_DIR", os.getcwd())
     logging.config.fileConfig(config_path, defaults={"LOGGING_DIR": log_dir})
