@@ -1,6 +1,10 @@
 from hashlib import blake2b
-from pymerkle import InmemoryTree as BaseMerkleTree
 from typing import List
+
+from hexbytes import HexBytes
+from pymerkle import InmemoryTree as BaseMerkleTree
+
+MIN_E2C_TRANSFERS = 1024
 
 
 def blake2b_hash(data=None):
@@ -20,19 +24,20 @@ class Blake2bHashMerkleTree(BaseMerkleTree):
 
 
 def get_merkle_proofs(
-    hex_leaves: List[str], for_leaf_index: int, tree_size: int = 1024
-) -> List[str]:
+    hex_leaves: List[HexBytes], for_leaf_index: int
+) -> List[HexBytes]:
     tree = Blake2bHashMerkleTree()
 
     for leaf in hex_leaves:
-        tree.append_entry(bytes.fromhex(leaf))
+        tree.append_entry(leaf)
 
     empty_hashed_leaf = bytes([0])
-    empty_leaves = tree_size - (tree.get_size() or 0)
+    empty_leaves = max(0, MIN_E2C_TRANSFERS - (tree.get_size() or 0))
     for _ in range(empty_leaves):
         tree.append_entry(empty_hashed_leaf)
 
     # A number is required instead of index
     proof = tree.prove_inclusion(for_leaf_index + 1)
     proof_path = proof.serialize()["path"]
-    return proof_path[1:]
+
+    return [HexBytes(x) for x in proof_path[1:]]
