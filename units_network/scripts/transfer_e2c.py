@@ -24,6 +24,7 @@ Additional optional arguments:
   --asset-id <Waves asset id in Base58> (default: Unit0 of selected network)
   --asset-name <Waves asset name>: an alternative to --asset-id
   --amount N (default: 0.01): amount of transferred Unit0 tokens
+  --timeout N (default: 180): seconds to wait for a block or its finalization on the chain contract
   --args <path/to/args.json>: take default argument values from this file""",
             file=sys.stderr,
         )
@@ -76,13 +77,15 @@ Additional optional arguments:
     log.info(f"[C] E2C transfer params: {transfer_params}")
 
     withdraw_contract_block = network.cl_chain_contract.waitForBlock(
-        transfer_params.block_with_transfer_hash
+        transfer_params.block_with_transfer_hash, timeout=args.timeout
     )
     log.info(
         f"[C] Found a block with transfer on chain contract: {withdraw_contract_block}"
     )
 
-    network.cl_chain_contract.waitForFinalized(withdraw_contract_block)
+    network.cl_chain_contract.waitForFinalized(
+        withdraw_contract_block, timeout=args.timeout
+    )
 
     withdraw_result = network.cl_chain_contract.withdrawAsset(
         sender=cl_account,

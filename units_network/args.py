@@ -18,6 +18,7 @@ class ArgsData:
     asset_id: Optional[str] = None
     asset_name: Optional[str] = None
     amount: Optional[Decimal] = None
+    timeout: Optional[int] = None  # In seconds
     txn_hash: Optional[str] = None
 
     @staticmethod
@@ -90,6 +91,11 @@ class Args:
         if from_args:
             from_args = Decimal(from_args)
         return from_args or self.default.amount or Decimal("0.01")
+
+    # In seconds
+    @cached_property
+    def timeout(self) -> int:
+        return int(get_argument_value("--timeout") or self.default.timeout or "180")
 
     @cached_property
     def txn_hash(self) -> Optional[str]:

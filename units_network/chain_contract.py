@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from time import sleep
+from time import sleep, time
 from typing import List, Optional
 from urllib.parse import quote
 
@@ -153,7 +153,7 @@ class ChainContract(ExtendedOracle):
     ):
         last_finalized_block: List[Optional[ContractBlock]] = [None]
 
-        rest_timeout = timeout
+        end_time = time() + timeout
         while True:
             curr_finalized_block = self.getFinalizedBlock()
             message = f"Wait for {block.chain_height - curr_finalized_block.chain_height} blocks to finalize"
@@ -167,33 +167,31 @@ class ChainContract(ExtendedOracle):
             if curr_finalized_block.chain_height >= block.chain_height:
                 return
 
-            rest_timeout -= poll_latency
-            if rest_timeout <= 0:
+            if time() >= end_time:
                 break
 
             sleep(poll_latency)
         raise units_network.exceptions.TimeExhausted(
-            f"Block {block.hash.to_0x_hex()} not finalized on contract in {timeout} seconds"
+            f"Block {block.hash.to_0x_hex()} not finalized on contract in {timeout} seconds. Try to increase --timeout"
         )
 
     def waitForBlock(
         self, block_hash: HexBytes, timeout: float = 60, poll_latency: float = 2
     ) -> ContractBlock:
         self.log.debug(f"Wait for {block_hash.to_0x_hex()} on chain contract")
-        rest_timeout = timeout
+        end_time = time() + timeout
         while True:
             try:
                 return self.getBlockMeta(block_hash)
             except units_network.exceptions.BlockNotFound:
                 pass
 
-            rest_timeout -= poll_latency
-            if rest_timeout <= 0:
+            if time() >= end_time:
                 break
 
             sleep(poll_latency)
         raise units_network.exceptions.TimeExhausted(
-            f"Block {block_hash.to_0x_hex()} not found on contract in {timeout} seconds"
+            f"Block {block_hash.to_0x_hex()} not found on contract in {timeout} seconds. Try to increase --timeout"
         )
 
     def getFinalizedBlock(self) -> ContractBlock:
