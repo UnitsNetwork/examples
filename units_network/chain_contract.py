@@ -215,7 +215,7 @@ class ChainContract(ExtendedOracle):
         minerRewardInTokens: float = 1.8,
         daoAddress: str = "",
         daoRewardInTokens: float = 0.2,
-        txFee: int = 100_500_000,
+        txFee: int = 100_900_000,
     ):
         minerRewardInWei = int(minerRewardInTokens * 10**18)
         minerRewardInGwei = Web3.from_wei(minerRewardInWei, "gwei")
@@ -273,7 +273,7 @@ class ChainContract(ExtendedOracle):
         assets: List[pw.Asset],
         erc20Addresses: List[ChecksumAddress],
         elDecimals: List[int],
-        txFee: int = 500_000,
+        txFee: int = 900_000,
     ):
         txn = self.prepareRegisterAssets(
             sender, assets, erc20Addresses, elDecimals, txFee
@@ -286,7 +286,7 @@ class ChainContract(ExtendedOracle):
         assets: List[pw.Asset],
         erc20Addresses: List[ChecksumAddress],
         elDecimals: List[int],
-        txFee: int = 500_000,
+        txFee: int = 900_000,
     ):
         generator = TxGenerator(self.pw)  # type: ignore
         signer = TxSigner(self.pw)  # type: ignore
@@ -330,7 +330,7 @@ class ChainContract(ExtendedOracle):
         name: str,
         description: str,
         clDecimals: int,
-        txFee: int = 100_500_000,
+        txFee: int = 100_900_000,
     ):
         txn = self.prepareIssueAndRegister(
             sender, erc20Address, elDecimals, name, description, clDecimals, txFee
@@ -345,7 +345,7 @@ class ChainContract(ExtendedOracle):
         name: str,
         description: str,
         clDecimals: int,
-        txFee: int = 100_500_000,
+        txFee: int = 100_900_000,
     ):
         generator = TxGenerator(self.pw)  # type: ignore
         signer = TxSigner(self.pw)  # type: ignore
