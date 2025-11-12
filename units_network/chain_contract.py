@@ -7,7 +7,7 @@ from urllib.parse import quote
 import pywaves as pw
 from eth_typing import AnyAddress, BlockNumber, ChecksumAddress
 from hexbytes import HexBytes
-from pywaves.address import TxSigner
+from pywaves import TxSigner
 from pywaves.txGenerator import TxGenerator
 from web3 import Web3
 
@@ -215,6 +215,7 @@ class ChainContract(ExtendedOracle):
         minerRewardInTokens: float = 1.8,
         daoAddress: str = "",
         daoRewardInTokens: float = 0.2,
+        blockDelayInSeconds: int = 2,
         txFee: int = 100_900_000,
     ):
         minerRewardInWei = int(minerRewardInTokens * 10**18)
@@ -233,6 +234,7 @@ class ChainContract(ExtendedOracle):
                 },
                 {"type": "string", "value": daoAddress},
                 {"type": "integer", "value": int(daoRewardInTokens * 10**8)},
+                {"type": "integer", "value": blockDelayInSeconds}
             ],
             txFee=txFee,
         )
