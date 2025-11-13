@@ -7,7 +7,7 @@ if [ ! -d "$PWD/.venv" ]; then
 
   if [[ "$(uname)" == "Darwin" && "$(uname -m)" == "arm64" ]]; then
     # Otherwise python-axolotl-curve25519 won't compile
-    export CC=gcc
+    export CC=gcc-15
   fi
 
   echo "Install dependencies"

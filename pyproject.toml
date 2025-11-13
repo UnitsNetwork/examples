@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "units-network"
 version = "1.0.4"
 description = "Scripts and classes to interact with Unit0"
-dependencies = ["pywaves-ce==1.0.5", "web3~=7.2", "pymerkle~=6.1"]
+dependencies = ["pywaves-ce==2.0.3", "web3~=7.2", "pymerkle~=6.1"]
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Vyatcheslav Suharnikov", email = "arz.freezy@gmail.com" }]
